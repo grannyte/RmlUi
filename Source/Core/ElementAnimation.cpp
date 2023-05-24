@@ -506,7 +506,7 @@ float ElementAnimation::GetInterpolationFactorAndKeys(int* out_key0, int* out_ke
 Property ElementAnimation::UpdateAndGetProperty(double world_time, Element& element)
 {
 	float dt = float(world_time - last_update_world_time);
-	if (keys.size() < 2 || animation_complete || dt <= 0.0f)
+	if (keys.size() < 2 || animation_complete)
 		return Property{};
 
 	dt = Math::Min(dt, 0.1f);

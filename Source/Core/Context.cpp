@@ -195,7 +195,7 @@ bool Context::Update()
 	// lookups in unrelated documents, such as when adding a new document. Adding an element dirties the parent definition, which in this case is the
 	// root. By extension the definition of all the other documents are also dirtied, unnecessarily.
 	root->dirty_definition = false;
-	root->dirty_child_definitions = false;
+	root->dirty_child_definitions = true;
 
 	root->Update(density_independent_pixel_ratio, Vector2f(dimensions));
 

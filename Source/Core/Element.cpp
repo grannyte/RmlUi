@@ -168,7 +168,10 @@ void Element::Update(float dp_ratio, Vector2f vp_dimensions)
 	HandleTransitionProperty();
 	HandleAnimationProperty();
 	AdvanceAnimations();
-
+	if (dirty_animation)
+	{
+		printf("It's a dirty boy");
+	}
 	meta->scroll.Update();
 
 	UpdateProperties(dp_ratio, vp_dimensions);
@@ -179,6 +182,7 @@ void Element::Update(float dp_ratio, Vector2f vp_dimensions)
 		HandleAnimationProperty();
 		AdvanceAnimations();
 		UpdateProperties(dp_ratio, vp_dimensions);
+		UpdateOffset();
 	}
 
 	meta->decoration.InstanceDecorators();
