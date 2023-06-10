@@ -449,6 +449,7 @@ static bool BuildGlyph(FT_Face ft_face, const Character character, FontGlyphMap&
 
 				if (glyph.color_format == ColorFormat::RGBA8)
 				{
+					break;
 					// Swizzle channels (BGRA -> RGBA) and un-premultiply alpha.
 					destination_bitmap = glyph.bitmap_owned_data.get();
 
