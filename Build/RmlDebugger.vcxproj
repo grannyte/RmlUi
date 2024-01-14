@@ -266,7 +266,7 @@
       <OmitFramePointers>false</OmitFramePointers>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <SDLCheck>false</SDLCheck>
-      <ControlFlowGuard>false</ControlFlowGuard>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <FloatingPointModel>Fast</FloatingPointModel>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -275,6 +275,7 @@
       <SupportJustMyCode>false</SupportJustMyCode>
       <BrowseInformation>false</BrowseInformation>
       <CompileAsManaged>false</CompileAsManaged>
+      <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Debug\";RmlDebugger_EXPORTS</PreprocessorDefinitions>
@@ -702,7 +703,7 @@
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
-      <FloatingPointExceptions>true</FloatingPointExceptions>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
       <CreateHotpatchableImage>false</CreateHotpatchableImage>
       <ControlFlowGuard>false</ControlFlowGuard>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
@@ -847,7 +848,7 @@
     <ClCompile Include="..\Source\Debugger\Geometry.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="E:\Users\David\Documents\Visual Studio 2010\Projects\projetx\RmlUI\Build\RmlCore.vcxproj">
+    <ProjectReference Include="$(SolutionDir)\RmlUI\Build\RmlCore.vcxproj">
       <Project>{4C3F64A4-0085-3EB5-B65F-ACD81748AB4F}</Project>
       <Name>RmlCore</Name>
     </ProjectReference>
