@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -58,7 +58,7 @@ static const String document_escaping = R"(
 <rml>
     <head>
 	<style>
-	p { 
+	p {
 		font-family: LatoLatin;
 	}
 	</style>
@@ -73,7 +73,7 @@ static const String document_escaping_tags = R"(
 <rml>
     <head>
 	<style>
-	* { 
+	* {
 		font-family: LatoLatin;
 	}
 	</style>
@@ -109,18 +109,18 @@ TEST_CASE("XMLParser.escaping")
 {
 	Context* context = TestsShell::GetContext();
 	REQUIRE(context);
-	
+
 	ElementDocument* document = context->LoadDocumentFromMemory(document_escaping);
 	REQUIRE(document);
 	document->Show();
-	
+
 	TestsShell::RenderLoop();
-	
+
 	auto element = document->GetElementById("p");
 	REQUIRE(element);
-	
+
 	CHECK(element->GetInnerRML() == "\xe2\x82\xac\xe2\x82\xac");
-	
+
 	document->Close();
 	TestsShell::ShutdownShell();
 }
@@ -129,19 +129,70 @@ TEST_CASE("XMLParser.escaping_tags")
 {
 	Context* context = TestsShell::GetContext();
 	REQUIRE(context);
-	
+
 	ElementDocument* document = context->LoadDocumentFromMemory(document_escaping_tags);
 	REQUIRE(document);
 	document->Show();
-	
+
 	TestsShell::RenderLoop();
-	
-	CHECK(document->GetNumChildren() == 1); 
+
+	CHECK(document->GetNumChildren() == 1);
 	CHECK(document->GetFirstChild()->GetTagName() == "#text");
 	// Text-access should yield decoded value, while RML-access should yield encoded value
 	CHECK(static_cast<ElementText*>(document->GetFirstChild())->GetText() == "<p>&lt;span/&gt;</p>");
 	CHECK(document->GetInnerRML() == "&lt;p&gt;&amp;lt;span/&amp;gt;&lt;/p&gt;");
-	
+
 	document->Close();
+	TestsShell::ShutdownShell();
+}
+
+TEST_CASE("XMLParser.comments_and_cdata")
+{
+	const String document_source_pre = R"(
+	<rml>
+	    <head>
+		<style>
+		body {
+			font-family: LatoLatin;
+		}
+		</style>
+	    </head>
+	    <body>)";
+	const String document_source_post = R"(</body></rml>)";
+
+	struct TestCase {
+		String rml;
+		String expected_parsed_rml;
+	};
+
+	const TestCase tests[] = {
+		{"<!-- <xyz> -->", ""},
+		{"<!--<xyz>-->", ""},
+		{"<!-- <xyz> ->-->", ""},
+		{"<!-- <xyz> -- >-->", ""},
+		{"<!-- <xyz> --->", ""},
+		{"<!-- <xyz> ---->", ""},
+		{"<!--- <xyz> ---->", ""},
+		{"<!-- <p> --><p>hello</p><!-- </p> -->", "<p>hello</p>"},
+		{"<![CDATA[hello]]>", "hello"},
+		{"<![CDATA[hello]]]>", "hello]"},
+		{"<![CDATA[hello]]world]]>", "hello]]world"},
+		{"<![CDATA[\"hello\"]]>", "&quot;hello&quot;"},
+		{"<![CDATA[<p>world</p>]]>", "<p>world</p>"},
+	};
+
+	Context* context = TestsShell::GetContext();
+	REQUIRE(context);
+
+	for (const TestCase& test : tests)
+	{
+		ElementDocument* document = context->LoadDocumentFromMemory(document_source_pre + test.rml + document_source_post);
+		REQUIRE(document);
+
+		CHECK(document->GetInnerRML() == test.expected_parsed_rml);
+
+		document->Close();
+		context->Update();
+	}
 	TestsShell::ShutdownShell();
 }

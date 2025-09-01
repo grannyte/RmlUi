@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,52 +29,74 @@
 #ifndef RMLUI_CORE_TEXTUREDATABASE_H
 #define RMLUI_CORE_TEXTUREDATABASE_H
 
+#include "../../Include/RmlUi/Core/CallbackTexture.h"
+#include "../../Include/RmlUi/Core/StableVector.h"
 #include "../../Include/RmlUi/Core/Types.h"
 
 namespace Rml {
 
 class RenderInterface;
-class TextureResource;
 
-/**
-    @author Peter Curry
- */
+class CallbackTextureDatabase : NonCopyMoveable {
+public:
+	CallbackTextureDatabase();
+	~CallbackTextureDatabase();
+
+	StableVectorIndex CreateTexture(CallbackTextureFunction&& callback);
+	void ReleaseTexture(RenderInterface* render_interface, StableVectorIndex callback_index);
+
+	Vector2i GetDimensions(RenderManager* render_manager, RenderInterface* render_interface, StableVectorIndex callback_index);
+	TextureHandle GetHandle(RenderManager* render_manager, RenderInterface* render_interface, StableVectorIndex callback_index);
+
+	size_t size() const;
+
+	void ReleaseAllTextures(RenderInterface* render_interface);
+
+private:
+	struct CallbackTextureEntry {
+		CallbackTextureFunction callback;
+		TextureHandle texture_handle = {};
+		Vector2i dimensions;
+	};
+
+	CallbackTextureEntry& EnsureLoaded(RenderManager* render_manager, RenderInterface* render_interface, StableVectorIndex callback_index);
+
+	StableVector<CallbackTextureEntry> texture_list;
+};
+
+class FileTextureDatabase : NonCopyMoveable {
+public:
+	FileTextureDatabase();
+	~FileTextureDatabase();
+
+	TextureFileIndex InsertTexture(const String& source);
+
+	TextureHandle GetHandle(RenderInterface* render_interface, TextureFileIndex index);
+	Vector2i GetDimensions(RenderInterface* render_interface, TextureFileIndex index);
+
+	void GetSourceList(StringList& source_list) const;
+
+	bool ReleaseTexture(RenderInterface* render_interface, const String& source);
+	void ReleaseAllTextures(RenderInterface* render_interface);
+
+private:
+	struct FileTextureEntry {
+		TextureHandle texture_handle = {};
+		Vector2i dimensions;
+		bool load_texture_failed = false;
+	};
+
+	FileTextureEntry LoadTextureEntry(RenderInterface* render_interface, const String& source);
+	FileTextureEntry& EnsureLoaded(RenderInterface* render_interface, TextureFileIndex index);
+
+	Vector<FileTextureEntry> texture_list;
+	UnorderedMap<String, TextureFileIndex> texture_map; // key: source, value: index into 'texture_list'
+};
 
 class TextureDatabase {
 public:
-	static void Initialise();
-	static void Shutdown();
-
-	/// Fetch a texture resource from file.
-	/// The texture will be returned from the database if it already exists, otherwise a new
-	/// entry will be added and returned.
-	static SharedPtr<TextureResource> Fetch(const String& source, const String& source_directory);
-
-	/// Release all textures bound through a render interface.
-	/// Pass nullptr to release all textures in the database.
-	static void ReleaseTextures(RenderInterface* render_interface = nullptr);
-
-	/// Adds a texture resource with a callback function and stores it as a weak (raw) pointer in the database.
-	static void AddCallbackTexture(TextureResource* texture);
-
-	/// Removes a callback texture from the database.
-	static void RemoveCallbackTexture(TextureResource* texture);
-
-	/// Return a list of all texture sources currently in the database.
-	static StringList GetSourceList();
-
-	/// For debugging. Returns true if any textures hold a reference to the given render interface.
-	static bool HoldsReferenceToRenderInterface(RenderInterface* render_interface);
-
-private:
-	TextureDatabase();
-	~TextureDatabase();
-
-	using TextureMap = UnorderedMap<String, SharedPtr<TextureResource>>;
-	TextureMap textures;
-
-	using CallbackTextureMap = UnorderedSet<TextureResource*>;
-	CallbackTextureMap callback_textures;
+	FileTextureDatabase file_database;
+	CallbackTextureDatabase callback_database;
 };
 
 } // namespace Rml

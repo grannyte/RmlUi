@@ -6,7 +6,9 @@ AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: Left
 AlignOperands: false
-AlignTrailingComments: true
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 1
 AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: Inline
@@ -40,6 +42,7 @@ Language: Cpp
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: Inner
 PointerAlignment: Left
+QualifierAlignment: Left
 ReflowComments: true
 SpaceAfterCStyleCast: false
 SpaceAfterLogicalNot: false
@@ -63,3 +66,4 @@ StatementMacros:
   - RMLUI_RTTI_DefineWithParent
 TabWidth: 4
 UseTab: AlignWithSpaces
+WhitespaceSensitiveMacros: ['RMLUI_STRINGIFY']

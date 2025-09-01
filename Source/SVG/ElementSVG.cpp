@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,9 +31,10 @@
 #include "../../Include/RmlUi/Core/Core.h"
 #include "../../Include/RmlUi/Core/ElementDocument.h"
 #include "../../Include/RmlUi/Core/FileInterface.h"
-#include "../../Include/RmlUi/Core/GeometryUtilities.h"
 #include "../../Include/RmlUi/Core/Math.h"
+#include "../../Include/RmlUi/Core/MeshUtilities.h"
 #include "../../Include/RmlUi/Core/PropertyIdSet.h"
+#include "../../Include/RmlUi/Core/RenderManager.h"
 #include "../../Include/RmlUi/Core/SystemInterface.h"
 #include <cmath>
 #include <lunasvg.h>
@@ -41,14 +42,9 @@
 
 namespace Rml {
 
+ElementSVG::ElementSVG(const String& tag) : Element(tag) {}
 
-ElementSVG::ElementSVG(const String& tag) : Element(tag), geometry(this)
-{
-}
-
-ElementSVG::~ElementSVG()
-{
-}
+ElementSVG::~ElementSVG() {}
 
 bool ElementSVG::GetIntrinsicDimensions(Vector2f& dimensions, float& ratio)
 {
@@ -57,11 +53,13 @@ bool ElementSVG::GetIntrinsicDimensions(Vector2f& dimensions, float& ratio)
 
 	dimensions = intrinsic_dimensions;
 
-	if (HasAttribute("width")) {
-		dimensions.x = GetAttribute< float >("width", -1);
+	if (HasAttribute("width"))
+	{
+		dimensions.x = GetAttribute<float>("width", -1);
 	}
-	if (HasAttribute("height")) {
-		dimensions.y = GetAttribute< float >("height", -1);
+	if (HasAttribute("height"))
+	{
+		dimensions.y = GetAttribute<float>("height", -1);
 	}
 
 	if (dimensions.y > 0)
@@ -78,7 +76,7 @@ void ElementSVG::OnRender()
 			GenerateGeometry();
 
 		UpdateTexture();
-		geometry.Render(GetAbsoluteOffset(Box::CONTENT));
+		geometry.Render(GetAbsoluteOffset(BoxArea::Content), Texture(texture));
 	}
 }
 
@@ -98,8 +96,7 @@ void ElementSVG::OnAttributeChange(const ElementAttributes& changed_attributes)
 		DirtyLayout();
 	}
 
-	if (changed_attributes.find("width") != changed_attributes.end() ||
-		changed_attributes.find("height") != changed_attributes.end())
+	if (changed_attributes.find("width") != changed_attributes.end() || changed_attributes.find("height") != changed_attributes.end())
 	{
 		DirtyLayout();
 	}
@@ -109,38 +106,23 @@ void ElementSVG::OnPropertyChange(const PropertyIdSet& changed_properties)
 {
 	Element::OnPropertyChange(changed_properties);
 
-	if (changed_properties.Contains(PropertyId::ImageColor) ||
-		changed_properties.Contains(PropertyId::Opacity)) {
+	if (changed_properties.Contains(PropertyId::ImageColor) || changed_properties.Contains(PropertyId::Opacity))
+	{
 		geometry_dirty = true;
 	}
 }
 
 void ElementSVG::GenerateGeometry()
 {
-	geometry.Release(true);
-
-	Vector< Vertex >& vertices = geometry.GetVertices();
-	Vector< int >& indices = geometry.GetIndices();
-
-	vertices.resize(4);
-	indices.resize(6);
-
-	Vector2f texcoords[2] = {
-		{0.0f, 0.0f},
-		{1.0f, 1.0f}
-	};
-
 	const ComputedValues& computed = GetComputedValues();
+	ColourbPremultiplied quad_colour = computed.image_color().ToPremultiplied(computed.opacity());
 
-	const float opacity = computed.opacity();
-	Colourb quad_colour = computed.image_color();
-	quad_colour.alpha = (byte)(opacity * (float)quad_colour.alpha);
+	const Vector2f render_dimensions_f = GetBox().GetSize(BoxArea::Content).Round();
+	render_dimensions = Vector2i(render_dimensions_f);
 
-	const Vector2f render_dimensions_f = GetBox().GetSize(Box::CONTENT).Round();
-	render_dimensions.x = int(render_dimensions_f.x);
-	render_dimensions.y = int(render_dimensions_f.y);
-
-	GeometryUtilities::GenerateQuad(&vertices[0], &indices[0], Vector2f(0, 0), render_dimensions_f, quad_colour, texcoords[0], texcoords[1]);
+	Mesh mesh = geometry.Release(Geometry::ReleaseMode::ClearMesh);
+	MeshUtilities::GenerateQuad(mesh, Vector2f(0), render_dimensions_f, quad_colour, Vector2f(0), Vector2f(1));
+	geometry = GetRenderManager()->MakeGeometry(std::move(mesh));
 
 	geometry_dirty = false;
 }
@@ -150,7 +132,7 @@ bool ElementSVG::LoadSource()
 	source_dirty = false;
 	texture_dirty = true;
 	intrinsic_dimensions = Vector2f{};
-	geometry.SetTexture(nullptr);
+	texture = {};
 	svg_document.reset();
 
 	const String attribute_src = GetAttribute<String>("src", "");
@@ -196,23 +178,35 @@ void ElementSVG::UpdateTexture()
 	if (!svg_document || !texture_dirty)
 		return;
 
+	RenderManager* render_manager = GetRenderManager();
+	if (!render_manager)
+		return;
+
 	// Callback for generating texture.
-	auto p_callback = [this](const String& /*name*/, UniquePtr<const byte[]>& data, Vector2i& dimensions) -> bool {
+	auto texture_callback = [this](const CallbackTextureInterface& texture_interface) -> bool {
 		RMLUI_ASSERT(svg_document);
-
-		const size_t total_bytes = 4 * render_dimensions.x * render_dimensions.y;
-
 		lunasvg::Bitmap bitmap = svg_document->renderToBitmap(render_dimensions.x, render_dimensions.y);
+		if (!bitmap.valid() || !bitmap.data())
+		{
+			Log::Message(Rml::Log::Type::LT_WARNING, "Could not render SVG to bitmap: %s", GetAttribute<String>("src", "").c_str());
+			return false;
+		}
 
-		data.reset(new byte[total_bytes]);
-		memcpy((void*)data.get(), bitmap.data(), total_bytes);
-		dimensions = render_dimensions;
+		// Swap red and blue channels, assuming LunaSVG v2.3.2 or newer, to convert to RmlUi's expected RGBA-ordering.
+		const size_t bitmap_byte_size = bitmap.width() * bitmap.height() * 4;
+		uint8_t* bitmap_data = bitmap.data();
+		for (size_t i = 0; i < bitmap_byte_size; i += 4)
+			std::swap(bitmap_data[i], bitmap_data[i + 2]);
 
+		if (!texture_interface.GenerateTexture({reinterpret_cast<const Rml::byte*>(bitmap.data()), bitmap_byte_size}, render_dimensions))
+		{
+			Log::Message(Rml::Log::Type::LT_WARNING, "Could not generate texture for SVG: %s", GetAttribute<String>("src", "").c_str());
+			return false;
+		}
 		return true;
 	};
 
-	texture.Set("svg", p_callback);
-	geometry.SetTexture(&texture);
+	texture = render_manager->MakeCallbackTexture(std::move(texture_callback));
 	texture_dirty = false;
 }
 

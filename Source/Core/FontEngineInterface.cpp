@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
  */
 
 #include "../../Include/RmlUi/Core/FontEngineInterface.h"
+#include "../../Include/RmlUi/Core/StringUtilities.h"
 
 namespace Rml {
 
@@ -34,13 +35,17 @@ FontEngineInterface::FontEngineInterface() {}
 
 FontEngineInterface::~FontEngineInterface() {}
 
-bool FontEngineInterface::LoadFontFace(const String& /*file_path*/, bool /*fallback_face*/, Style::FontWeight /*weight*/)
+void FontEngineInterface::Initialize() {}
+
+void FontEngineInterface::Shutdown() {}
+
+bool FontEngineInterface::LoadFontFace(const String& /*file_path*/, int /*face_index*/, bool /*fallback_face*/, Style::FontWeight /*weight*/)
 {
 	return false;
 }
 
-bool FontEngineInterface::LoadFontFace(const byte* /*data*/, int /*data_size*/, const String& /*font_family*/, Style::FontStyle /*style*/,
-	Style::FontWeight /*weight*/, bool /*fallback_face*/)
+bool FontEngineInterface::LoadFontFace(Span<const byte> /*data*/, int /*face_index*/, const String& /*family*/, Style::FontStyle /*style*/, Style::FontWeight /*weight*/,
+	bool /*fallback_face*/)
 {
 	return false;
 }
@@ -56,38 +61,21 @@ FontEffectsHandle FontEngineInterface::PrepareFontEffects(FontFaceHandle /*handl
 	return 0;
 }
 
-int FontEngineInterface::GetSize(FontFaceHandle /*handle*/)
+const FontMetrics& FontEngineInterface::GetFontMetrics(FontFaceHandle /*handle*/)
+{
+	static const FontMetrics metrics = {};
+	return metrics;
+}
+
+int FontEngineInterface::GetStringWidth(FontFaceHandle /*handle*/, StringView /*string*/, const TextShapingContext& /*text_shaping_context*/,
+	Character /*prior_character*/)
 {
 	return 0;
 }
 
-int FontEngineInterface::GetXHeight(FontFaceHandle /*handle*/)
-{
-	return 0;
-}
-
-int FontEngineInterface::GetLineHeight(FontFaceHandle /*handle*/)
-{
-	return 0;
-}
-
-int FontEngineInterface::GetBaseline(FontFaceHandle /*handle*/)
-{
-	return 0;
-}
-
-float FontEngineInterface::GetUnderline(FontFaceHandle /*handle*/, float& /*thickness*/)
-{
-	return 0;
-}
-
-int FontEngineInterface::GetStringWidth(FontFaceHandle /*handle*/, const String& /*string*/, Character /*prior_character*/)
-{
-	return 0;
-}
-
-int FontEngineInterface::GenerateString(FontFaceHandle /*face_handle*/, FontEffectsHandle /*font_effects_handle*/, const String& /*string*/,
-	const Vector2f& /*position*/, const Colourb& /*colour*/, float /*opacity*/, GeometryList& /*geometry*/)
+int FontEngineInterface::GenerateString(RenderManager& /*render_manager*/, FontFaceHandle /*face_handle*/, FontEffectsHandle /*font_effects_handle*/,
+	StringView /*string*/, Vector2f /*position*/, ColourbPremultiplied /*colour*/, float /*opacity*/,
+	const TextShapingContext& /*text_shaping_context*/, TexturedMeshList& /*mesh_list*/)
 {
 	return 0;
 }

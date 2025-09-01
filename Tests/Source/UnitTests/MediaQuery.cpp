@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -204,6 +204,121 @@ static const String document_media_query4_rml = R"(
 </rml>
 )";
 
+static const String document_media_query5_rml = R"(
+<rml>
+<head>
+	<title>Test</title>
+	<link type="text/rcss" href="/assets/rml.rcss"/>
+	<style>
+		body {
+			left: 0;
+			top: 0;
+			right: 0;
+			bottom: 0;
+		}
+
+		div {
+			height: 48px;
+			width: 48px;
+			background: white;
+		}
+
+		@media not (theme: tiny) {
+			div {
+				height: 32px;
+				width: 32px;
+			}
+		}
+
+		@media (theme: big) {
+			div {
+				height: 96px;
+				width: 96px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+<div/>
+</body>
+</rml>
+)";
+
+static const String document_media_query6_rml = R"(
+<rml>
+<head>
+	<title>Test</title>
+	<link type="text/rcss" href="/assets/rml.rcss"/>
+	<style>
+		body {
+			left: 0;
+			top: 0;
+			right: 0;
+			bottom: 0;
+		}
+
+		div {
+			height: 48px;
+			width: 48px;
+			background: white;
+		}
+
+		@media not not (theme: big) {
+			div {
+				height: 32px;
+				width: 32px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+<div/>
+</body>
+</rml>
+)";
+
+static const String document_media_query7_rml = R"(
+<rml>
+<head>
+	<title>Test</title>
+	<link type="text/rcss" href="/assets/rml.rcss"/>
+	<style>
+		body {
+			left: 0;
+			top: 0;
+			right: 0;
+			bottom: 0;
+		}
+
+		div {
+			height: 48px;
+			width: 48px;
+			background: white;
+		}
+
+		@media (theme: big) (theme: small) {
+			div {
+				height: 32px;
+				width: 32px;
+			}
+		}
+
+		@media not (theme: big) (theme: small) {
+			div {
+				height: 32px;
+				width: 32px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+<div/>
+</body>
+</rml>
+)";
 
 TEST_CASE("mediaquery.basic")
 {
@@ -369,6 +484,89 @@ TEST_CASE("mediaquery.theme")
 
 	CHECK(elems[0]->GetBox().GetSize().x == 32.0f);
 
+	document->Close();
+
+	TestsShell::ShutdownShell();
+}
+
+// test of `not`; `not` should be an inverted case
+TEST_CASE("mediaquery.theme.notonly")
+{
+	Context* context = TestsShell::GetContext();
+	REQUIRE(context);
+
+	ElementDocument* document = context->LoadDocumentFromMemory(document_media_query5_rml);
+	REQUIRE(document);
+	document->Show();
+
+	context->Update();
+	context->Render();
+
+	TestsShell::RenderLoop();
+
+	ElementList elems;
+	document->GetElementsByTagName(elems, "div");
+	CHECK(elems.size() == 1);
+
+	CHECK(elems[0]->GetBox().GetSize().x == 32.0f);
+
+	context->ActivateTheme("big", true);
+	context->Update();
+	context->Render();
+
+	CHECK(elems[0]->GetBox().GetSize().x == 96.0f);
+
+	context->ActivateTheme("big", false);
+	context->Update();
+	context->Render();
+
+	CHECK(elems[0]->GetBox().GetSize().x == 32.0f);
+
+	context->ActivateTheme("tiny", true);
+	context->Update();
+	context->Render();
+
+	CHECK(elems[0]->GetBox().GetSize().x == 48.0f);
+
+	context->ActivateTheme("big", true);
+	context->Update();
+	context->Render();
+
+	CHECK(elems[0]->GetBox().GetSize().x == 96.0f);
+
+	document->Close();
+
+	TestsShell::ShutdownShell();
+}
+
+// test that `not` cannot appear multiple times
+TEST_CASE("mediaquery.theme.notonly_one")
+{
+	Context* context = TestsShell::GetContext();
+	REQUIRE(context);
+	
+	INFO("Expected warnings: unexpected 'not'.");
+	TestsShell::SetNumExpectedWarnings(1);
+
+	ElementDocument* document = context->LoadDocumentFromMemory(document_media_query6_rml);
+	REQUIRE(document);
+	document->Close();
+
+	TestsShell::ShutdownShell();
+}
+
+
+// test that an `and` must be between multiple conditions.
+TEST_CASE("mediaquery.theme.condition_checks")
+{
+	Context* context = TestsShell::GetContext();
+	REQUIRE(context);
+	
+	INFO("Expected warnings: expected 'and'.");
+	TestsShell::SetNumExpectedWarnings(2);
+
+	ElementDocument* document = context->LoadDocumentFromMemory(document_media_query7_rml);
+	REQUIRE(document);
 	document->Close();
 
 	TestsShell::ShutdownShell();

@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@ using namespace Rml;
 static constexpr const char* document_rml_template = R"(
 <rml>
 <head>
-	
+
 	<title>Benchmark Sample</title>
 	<link type="text/template" href="/assets/window.rml"/>
 	<style>
@@ -61,7 +61,7 @@ static constexpr const char* document_rml_template = R"(
 			width: 1300px;
 			height: 600px;
 		}
-		#performance 
+		#performance
 		{
 			width: 800px;
 			height: 300px;
@@ -151,9 +151,8 @@ static String GenerateRCSS(SelectorFlags selectors, const String& complex_select
 			result += GenerateRule(name);
 
 			// Set a property that does not require a layout change
-			result += CreateString(64, " { scrollbar-margin: %dpx; }\n", int(c - 'a') + 1);
+			result += CreateString(" { scrollbar-margin: %dpx; }\n", int(c - 'a') + 1);
 
-			
 #if 1
 			// This conditions ensures that only a single version of the complex selector is included. This can be disabled to test how well the rules
 			// are de-duplicated, since then a lot more selectors will be tested per update call. Rules that contain sub-selectors are currently not
@@ -182,7 +181,7 @@ static String GenerateRml(const int num_rows)
 		int value = rng() % max;
 		String class_name_a = char('a' + char(rng() % 26)) + ToString(rng() % num_rule_iterations);
 		String class_name_b = char('a' + char(rng() % 26)) + ToString(rng() % num_rule_iterations);
-		Rml::String rml_row = Rml::CreateString(1000, R"(
+		Rml::String rml_row = Rml::CreateString(R"(
 			<div class="row">
 				<div class="col col1"><button class="expand" index="%d">+</button>&nbsp;<a>Route %d</a></div>
 				<div class="col col23"><input type="range" class="assign_range" min="0" max="%d" value="%d"/></div>
@@ -257,7 +256,7 @@ TEST_CASE("Selectors")
 		else
 			styles = GenerateRCSS(selector_flags, complex_selector, name);
 
-		const String compiled_document_rml = Rml::CreateString(1000 + styles.size(), document_rml_template, styles.c_str());
+		const String compiled_document_rml = Rml::CreateString(document_rml_template, styles.c_str());
 
 		ElementDocument* document = context->LoadDocumentFromMemory(compiled_document_rml);
 		document->Show();
@@ -269,7 +268,7 @@ TEST_CASE("Selectors")
 
 		if (reference)
 		{
-			String msg = Rml::CreateString(128, "\nElement update after pseudo class change with %d descendant elements and %d unique RCSS rules.",
+			String msg = Rml::CreateString("\nElement update after pseudo class change with %d descendant elements and %d unique RCSS rules.",
 				GetNumDescendentElements(el), num_rule_iterations * 26);
 			MESSAGE(msg);
 
@@ -283,7 +282,7 @@ TEST_CASE("Selectors")
 
 		bool hover_active = false;
 
-		bench.run(name, [&] {
+		bench.run(name.c_str(), [&] {
 			hover_active = !hover_active;
 			// Toggle some arbitrary pseudo class on the element to dirty the definition on this and all descendent elements.
 			el->SetPseudoClass("hover", hover_active);

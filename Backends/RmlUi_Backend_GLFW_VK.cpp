@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,13 +28,16 @@
 
 #include "RmlUi_Backend.h"
 #include "RmlUi_Renderer_VK.h"
+// This space is intentional to prevent autoformat from reordering RmlUi_Renderer_VK behind RmlUi_Platform_GLFW
 #include "RmlUi_Platform_GLFW.h"
+#include <RmlUi/Config/Config.h>
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/Core.h>
 #include <RmlUi/Core/FileInterface.h>
-
+#include <RmlUi/Core/Log.h>
+#include <GLFW/glfw3.h>
+#include <stdint.h>
 #include <thread>
-#include <chrono>
 
 static void SetupCallbacks(GLFWwindow* window);
 
@@ -82,20 +85,24 @@ bool Backend::Initialize(const char* window_name, int width, int height, bool al
 
 	if (!window)
 	{
-		fprintf(stderr, "[GLFW] error can't create window!");
+		Rml::Log::Message(Rml::Log::LT_ERROR, "GLFW failed to create window");
 		return false;
 	}
 
 	data = Rml::MakeUnique<BackendData>();
 	data->window = window;
 
-	if (!data->render_interface.Initialize([](VkInstance instance, VkSurfaceKHR* out_surface) {
-			return glfwCreateWindowSurface(instance, data->window, nullptr, out_surface) == VkResult::VK_SUCCESS;
-			; 
-		}))
+	uint32_t count;
+	const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+	RMLUI_VK_ASSERTMSG(extensions != nullptr, "Failed to query GLFW Vulkan extensions");
+	if (!data->render_interface.Initialize(Rml::Vector<const char*>(extensions, extensions + count),
+			[](VkInstance instance, VkSurfaceKHR* out_surface) {
+				return glfwCreateWindowSurface(instance, data->window, nullptr, out_surface) == VkResult::VK_SUCCESS;
+				;
+			}))
 	{
 		data.reset();
-		fprintf(stderr, "Could not initialize Vulkan render interface.");
+		Rml::Log::Message(Rml::Log::LT_ERROR, "Failed to initialize Vulkan render interface");
 		return false;
 	}
 
@@ -160,7 +167,7 @@ static bool WaitForValidSwapchain()
 	return result;
 }
 
-bool Backend::ProcessEvents(Rml::Context* context, KeyDownCallback key_down_callback)
+bool Backend::ProcessEvents(Rml::Context* context, KeyDownCallback key_down_callback, bool power_save)
 {
 	RMLUI_ASSERT(data && context);
 
@@ -178,11 +185,14 @@ bool Backend::ProcessEvents(Rml::Context* context, KeyDownCallback key_down_call
 		context->SetDimensions(window_size);
 		context->SetDensityIndependentPixelRatio(dp_ratio);
 	}
-	
+
 	data->context = context;
 	data->key_down_callback = key_down_callback;
 
-	glfwPollEvents();
+	if (power_save)
+		glfwWaitEventsTimeout(Rml::Math::Min(context->GetNextUpdateDelay(), 10.0));
+	else
+		glfwPollEvents();
 
 	if (!WaitForValidSwapchain())
 		result = false;
@@ -261,8 +271,8 @@ static void SetupCallbacks(GLFWwindow* window)
 	glfwSetCursorEnterCallback(window, [](GLFWwindow* /*window*/, int entered) { RmlGLFW::ProcessCursorEnterCallback(data->context, entered); });
 
 	// Mouse input
-	glfwSetCursorPosCallback(window, [](GLFWwindow* /*window*/, double xpos, double ypos) {
-		RmlGLFW::ProcessCursorPosCallback(data->context, xpos, ypos, data->glfw_active_modifiers);
+	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
+		RmlGLFW::ProcessCursorPosCallback(data->context, window, xpos, ypos, data->glfw_active_modifiers);
 	});
 
 	glfwSetMouseButtonCallback(window, [](GLFWwindow* /*window*/, int button, int action, int mods) {

@@ -1,7 +1,7 @@
 <rml>
 <head>
-    <title>Word-break property</title>
-    <link type="text/rcss" href="../style.rcss"/>
+	<title>Word-break property</title>
+	<link type="text/rcss" href="../style.rcss"/>
 	<link rel="help" href="https://drafts.csswg.org/css-text-3/#word-break-property" />
 	<meta name="Description" content="Word-break property." />
 	<style>
@@ -29,7 +29,7 @@
 		.break-word {
 			word-break: break-word;
 		}
-		
+
 	</style>
 </head>
 
@@ -44,10 +44,10 @@
 	<hr/>
 	<h1>Zero-width box</h1>
 	<p>word-break: normal</p>
-	<div class="box zero">A WORD</div>
+	<div class="box zero">€ WORD</div>
 	<p>word-break: break-all</p>
-	<div class="box zero break-all">A WORD</div>
+	<div class="box zero break-all">€ WORD</div>
 	<p>word-break: break-word</p>
-	<div class="box zero break-word">A WORD</div>
+	<div class="box zero break-word">€ WORD</div>
 </body>
 </rml>

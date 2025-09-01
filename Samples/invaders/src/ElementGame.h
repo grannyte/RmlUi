@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,11 +35,10 @@
 class Game;
 
 /**
-	@author Peter Curry
+    @author Peter Curry
  */
 
-class ElementGame : public Rml::Element, public Rml::EventListener
-{
+class ElementGame : public Rml::Element, public Rml::EventListener {
 public:
 	ElementGame(const Rml::String& tag);
 	virtual ~ElementGame();
@@ -47,10 +46,11 @@ public:
 	/// Intercepts and handles key events.
 	void ProcessEvent(Rml::Event& event) override;
 
-	/// Receive notifications when child elements are added
-	/// This will only get called when we're added to the tree,
-	/// which allows us to bind to onload
+	/// This will get called when we're added to the tree, which allows us to bind to events.
 	void OnChildAdd(Rml::Element* element) override;
+
+	/// This will get called when we're removed from the tree, which allows us to clean up the event listeners previously added.
+	void OnChildRemove(Element* element) override;
 
 protected:
 	/// Updates the game.

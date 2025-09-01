@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,8 +27,6 @@
  */
 
 #include "Game.h"
-#include <RmlUi/Core.h>
-#include <Shell.h>
 #include "Defender.h"
 #include "EventManager.h"
 #include "GameDetails.h"
@@ -36,6 +34,8 @@
 #include "Invader.h"
 #include "Mothership.h"
 #include "Shield.h"
+#include <RmlUi/Core.h>
+#include <Shell.h>
 
 const int WINDOW_WIDTH = 1024;
 const int WINDOW_HEIGHT = 768;
@@ -69,17 +69,15 @@ Game::Game()
 {
 	initialized = false;
 	invader_frame_start = 0;
-	defender_lives = 3;	
-	current_invader_direction = 1.0f;	
+	defender_lives = 3;
+	current_invader_direction = 1.0f;
 	invaders = new Invader*[NUM_INVADERS + 1];
 	for (int i = 0; i < NUM_INVADERS + 1; i++)
-		invaders[i] = nullptr;	
+		invaders[i] = nullptr;
 
 	shields = new Shield*[NUM_SHIELDS];
 	for (int i = 0; i < NUM_SHIELDS; i++)
 		shields[i] = nullptr;
-
-	texture.Set("invaders/data/invaders.tga");
 
 	defender = new Defender(this);
 }
@@ -91,12 +89,12 @@ Game::~Game()
 	for (int i = 0; i < NUM_INVADERS + 1; i++)
 		delete invaders[i];
 
-	delete [] invaders;	
+	delete[] invaders;
 
 	for (int i = 0; i < NUM_SHIELDS; i++)
 		delete shields[i];
 
-	delete [] shields;
+	delete[] shields;
 }
 
 void Game::Initialise()
@@ -126,35 +124,36 @@ void Game::Update(double t)
 		// Determine if we should advance the invaders
 		if (t - invader_frame_start >= invader_move_freq)
 		{
-			MoveInvaders();		
+			MoveInvaders();
 
 			invader_frame_start = t;
 		}
 
 		// Update all invaders
 		for (int i = 0; i < NUM_INVADERS + 1; i++)
-			invaders[i]->Update(t);	
+			invaders[i]->Update(t);
 
 		defender->Update(t);
 	}
 }
 
-void Game::Render(float dp_ratio)
-{	
+void Game::Render(Rml::RenderManager& render_manager, float dp_ratio)
+{
 	if (defender_lives <= 0)
 		return;
 
-	Rml::TextureHandle texture_handle = texture.GetHandle(Rml::GetRenderInterface());
+	if (!texture)
+		texture = render_manager.LoadTexture("invaders/data/invaders.tga");
 
 	// Render all available shields
 	for (int i = 0; i < NUM_SHIELDS; i++)
-		shields[i]->Render(dp_ratio);
+		shields[i]->Render(render_manager, dp_ratio);
 
 	// Render all available invaders
 	for (int i = 0; i < NUM_INVADERS + 1; i++)
-		invaders[i]->Render(dp_ratio, texture_handle);
+		invaders[i]->Render(render_manager, dp_ratio, texture);
 
-	defender->Render(dp_ratio, texture_handle);
+	defender->Render(render_manager, dp_ratio, texture);
 }
 
 Defender* Game::GetDefender()
@@ -192,44 +191,39 @@ bool Game::CanDropBomb(int index)
 	return true;
 }
 
-// Access the shields.
 Shield* Game::GetShield(int index)
 {
 	return shields[index];
 }
 
-// Get the total number of shields
 int Game::GetNumShields()
 {
 	return NUM_SHIELDS;
 }
 
-// Adds a score onto the player's score.
 void Game::AddScore(int score)
 {
 	SetScore(GameDetails::GetScore() + score);
 }
 
-// Sets the player's score.
 void Game::SetScore(int score)
 {
 	GameDetails::SetScore(score);
 
 	Rml::Element* score_element = context->GetDocument("game_window")->GetElementById("score");
 	if (score_element != nullptr)
-		score_element->SetInnerRML(Rml::CreateString(128, "%d", score).c_str());
+		score_element->SetInnerRML(Rml::CreateString("%d", score).c_str());
 
 	// Update the high score if we've beaten it.
 	if (score > HighScores::GetHighScore())
 		SetHighScore(score);
 }
 
-// Sets the player's high-score.
 void Game::SetHighScore(int score)
 {
 	Rml::Element* high_score_element = context->GetDocument("game_window")->GetElementById("hiscore");
 	if (high_score_element != nullptr)
-		high_score_element->SetInnerRML(Rml::CreateString(128, "%d", score).c_str());
+		high_score_element->SetInnerRML(Rml::CreateString("%d", score).c_str());
 }
 
 void Game::SetLives(int lives)
@@ -238,7 +232,7 @@ void Game::SetLives(int lives)
 
 	Rml::Element* score_element = context->GetDocument("game_window")->GetElementById("lives");
 	if (score_element != nullptr)
-		score_element->SetInnerRML(Rml::CreateString(128, "%d", defender_lives).c_str());
+		score_element->SetInnerRML(Rml::CreateString("%d", defender_lives).c_str());
 }
 
 void Game::SetWave(int wave)
@@ -247,11 +241,11 @@ void Game::SetWave(int wave)
 
 	Rml::Element* waves_element = context->GetDocument("game_window")->GetElementById("waves");
 	if (waves_element != nullptr)
-		waves_element->SetInnerRML(Rml::CreateString(128, "%d", wave).c_str());
+		waves_element->SetInnerRML(Rml::CreateString("%d", wave).c_str());
 }
 
 void Game::RemoveLife()
-{	
+{
 	if (defender_lives > 0)
 	{
 		SetLives(defender_lives - 1);
@@ -265,7 +259,7 @@ void Game::RemoveLife()
 
 const Rml::Vector2f Game::GetWindowDimensions()
 {
-	return Rml::Vector2f((float) WINDOW_WIDTH, (float) WINDOW_HEIGHT);
+	return Rml::Vector2f((float)WINDOW_WIDTH, (float)WINDOW_HEIGHT);
 }
 
 void Game::MoveInvaders()
@@ -299,7 +293,7 @@ void Game::MoveInvaders()
 			}
 
 			// Increase speed of invaders
-			invader_move_freq *= INVADER_UPDATE_MODIFIER;			
+			invader_move_freq *= INVADER_UPDATE_MODIFIER;
 		}
 	}
 
@@ -340,7 +334,7 @@ void Game::OnGameOver()
 
 void Game::InitialiseShields()
 {
-	Rml::Vector2f shield_array_start_position((float) SHIELD_START_X, (float) SHIELD_START_Y);
+	Rml::Vector2f shield_array_start_position((float)SHIELD_START_X, (float)SHIELD_START_Y);
 
 	for (int x = 0; x < NUM_SHIELD_ARRAYS; x++)
 	{
@@ -356,13 +350,12 @@ void Game::InitialiseShields()
 			}
 
 			shields[(x * NUM_SHIELDS_PER_ARRAY) + i] = new Shield(this, type);
-			shields[(x * NUM_SHIELDS_PER_ARRAY) + i]->SetPosition(shield_array_start_position + Rml::Vector2f((float) SHIELD_SIZE * i, 0));
+			shields[(x * NUM_SHIELDS_PER_ARRAY) + i]->SetPosition(shield_array_start_position + Rml::Vector2f((float)SHIELD_SIZE * i, 0));
 		}
 
 		// Middle row (row of 4)
 		for (int i = 0; i < 4; i++)
 		{
-			
 			Shield::ShieldType type = Shield::REGULAR;
 			if (i == 1)
 				type = Shield::BOTTOM_RIGHT;
@@ -372,15 +365,17 @@ void Game::InitialiseShields()
 			}
 
 			shields[(x * NUM_SHIELDS_PER_ARRAY) + 4 + i] = new Shield(this, type);
-			shields[(x * NUM_SHIELDS_PER_ARRAY) + 4 + i]->SetPosition(shield_array_start_position + Rml::Vector2f((float) SHIELD_SIZE * i, (float) SHIELD_SIZE));
+			shields[(x * NUM_SHIELDS_PER_ARRAY) + 4 + i]->SetPosition(
+				shield_array_start_position + Rml::Vector2f((float)SHIELD_SIZE * i, (float)SHIELD_SIZE));
 		}
 
 		// Bottom row (2, one on each end)
 		shields[(x * NUM_SHIELDS_PER_ARRAY) + 8] = new Shield(this, Shield::REGULAR);
-		shields[(x * NUM_SHIELDS_PER_ARRAY) + 8]->SetPosition(shield_array_start_position + Rml::Vector2f(0, (float) SHIELD_SIZE * 2));
+		shields[(x * NUM_SHIELDS_PER_ARRAY) + 8]->SetPosition(shield_array_start_position + Rml::Vector2f(0, (float)SHIELD_SIZE * 2));
 
 		shields[(x * NUM_SHIELDS_PER_ARRAY) + 9] = new Shield(this, Shield::REGULAR);
-		shields[(x * NUM_SHIELDS_PER_ARRAY) + 9]->SetPosition(shield_array_start_position + Rml::Vector2f((float) SHIELD_SIZE * 3, (float) SHIELD_SIZE * 2));
+		shields[(x * NUM_SHIELDS_PER_ARRAY) + 9]->SetPosition(
+			shield_array_start_position + Rml::Vector2f((float)SHIELD_SIZE * 3, (float)SHIELD_SIZE * 2));
 
 		shield_array_start_position.x += SHIELD_SPACING_X;
 	}
@@ -395,26 +390,24 @@ void Game::InitialiseWave()
 		Invader::InvaderType type = Invader::UNKNOWN;
 		switch (y)
 		{
-		case 0:
-			type = Invader::RANK3; break;
+		case 0: type = Invader::RANK3; break;
 		case 1:
-		case 2:		
-			type = Invader::RANK2; break;
-		default:
-			type = Invader::RANK1; break;
+		case 2: type = Invader::RANK2; break;
+		default: type = Invader::RANK1; break;
 		}
 
 		// Determine position of top left invader
-		Rml::Vector2f invader_position((float) (WINDOW_WIDTH - (NUM_INVADERS_PER_ROW * INVADER_SPACING_X)) / 2, (float) (INVADER_START_Y + (y * INVADER_SPACING_Y)));
-	
+		Rml::Vector2f invader_position((float)(WINDOW_WIDTH - (NUM_INVADERS_PER_ROW * INVADER_SPACING_X)) / 2,
+			(float)(INVADER_START_Y + (y * INVADER_SPACING_Y)));
+
 		for (int x = 0; x < NUM_INVADERS_PER_ROW; x++)
 		{
 			// Determine invader type based on row position
 			int index = (y * NUM_INVADERS_PER_ROW) + x;
 
 			delete invaders[index];
-			invaders[index] = new Invader(this, type, (y * NUM_INVADERS_PER_ROW) + x);			
-			invaders[index]->SetPosition(invader_position);			
+			invaders[index] = new Invader(this, type, (y * NUM_INVADERS_PER_ROW) + x);
+			invaders[index]->SetPosition(invader_position);
 
 			// Increase invader position
 			invader_position.x += INVADER_SPACING_X;
@@ -425,7 +418,7 @@ void Game::InitialiseWave()
 	delete invaders[MOTHERSHIP];
 	invaders[MOTHERSHIP] = new Mothership(this, MOTHERSHIP);
 
-	// Update the move frequency	
-	invader_move_freq = ((((float)GameDetails::GetWave())-100.0f)/140.0f);
+	// Update the move frequency
+	invader_move_freq = ((((float)GameDetails::GetWave()) - 100.0f) / 140.0f);
 	invader_move_freq *= invader_move_freq;
 }

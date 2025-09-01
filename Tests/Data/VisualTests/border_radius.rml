@@ -1,7 +1,7 @@
 <rml>
 <head>
-    <title>Border-radius</title>
-    <link type="text/rcss" href="../style.rcss"/>
+	<title>Border-radius</title>
+	<link type="text/rcss" href="../style.rcss"/>
 	<link rel="help" href="https://drafts.csswg.org/css-backgrounds-3/#border-radius" />
 	<meta name="Description" content="Border-radius property" />
 	<style>
@@ -19,7 +19,7 @@
 		.thin {
 			border-width: 10dp 5dp 25dp 20dp;
 			border-radius: 80dp 30dp;
-			decorator: gradient( horizontal #ff8400 #ffd34f );
+			decorator: horizontal-gradient( #ff8400 #ffd34f );
 		}
 		.thick {
 			border-width: 40dp 20dp;
@@ -40,6 +40,7 @@
 			border-color: #55f #f57 #55f #afa;
 			border-width: 5dp;
 			border-radius: 8dp;
+			padding: 8dp 0;
 		}
 	</style>
 </head>

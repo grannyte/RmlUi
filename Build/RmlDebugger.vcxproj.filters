@@ -1,30 +1,80 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\Source\Debugger\Debugger.cpp" />
-    <ClCompile Include="..\Source\Debugger\DebuggerPlugin.cpp" />
-    <ClCompile Include="..\Source\Debugger\DebuggerSystemInterface.cpp" />
-    <ClCompile Include="..\Source\Debugger\ElementContextHook.cpp" />
-    <ClCompile Include="..\Source\Debugger\ElementInfo.cpp" />
-    <ClCompile Include="..\Source\Debugger\ElementLog.cpp" />
-    <ClCompile Include="..\Source\Debugger\Geometry.cpp" />
+    <ClCompile Include="..\Source\Debugger\Debugger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Debugger\DebuggerPlugin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Debugger\DebuggerSystemInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Debugger\ElementContextHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Debugger\ElementInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Debugger\ElementLog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Debugger\Geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Debugger\ElementDebugDocument.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Source\Debugger\BeaconSource.h" />
-    <ClInclude Include="..\Source\Debugger\CommonSource.h" />
-    <ClInclude Include="..\Source\Debugger\DebuggerPlugin.h" />
-    <ClInclude Include="..\Source\Debugger\DebuggerSystemInterface.h" />
-    <ClInclude Include="..\Source\Debugger\ElementContextHook.h" />
-    <ClInclude Include="..\Source\Debugger\ElementInfo.h" />
-    <ClInclude Include="..\Source\Debugger\ElementLog.h" />
-    <ClInclude Include="..\Source\Debugger\FontSource.h" />
-    <ClInclude Include="..\Source\Debugger\Geometry.h" />
-    <ClInclude Include="..\Source\Debugger\InfoSource.h" />
-    <ClInclude Include="..\Source\Debugger\LogSource.h" />
-    <ClInclude Include="..\Source\Debugger\MenuSource.h" />
-    <ClInclude Include="..\Include\RmlUi\Debugger\Debugger.h" />
-    <ClInclude Include="..\Include\RmlUi\Debugger\Header.h" />
-    <ClInclude Include="..\Include\RmlUi\Debugger.h" />
+    <ClInclude Include="..\Source\Debugger\BeaconSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\RmlUi\Debugger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\RmlUi\Debugger\Debugger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\DebuggerPlugin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\DebuggerSystemInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\ElementInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\FontSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\ElementLog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\Geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\RmlUi\Debugger\Header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\InfoSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\LogSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\MenuSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\CommonSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\ElementContextHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Debugger\ElementDebugDocument.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

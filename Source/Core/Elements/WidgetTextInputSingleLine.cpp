@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,16 @@
 #include "WidgetTextInputSingleLine.h"
 #include "../../../Include/RmlUi/Core/Dictionary.h"
 #include "../../../Include/RmlUi/Core/ElementText.h"
+#include "../../../Include/RmlUi/Core/Elements/ElementFormControl.h"
 #include <algorithm>
 
 namespace Rml {
 
-WidgetTextInputSingleLine::WidgetTextInputSingleLine(ElementFormControl* parent) : WidgetTextInput(parent) {}
+WidgetTextInputSingleLine::WidgetTextInputSingleLine(ElementFormControl* parent) : WidgetTextInput(parent)
+{
+	// Single line text controls should clip to the content area, see visual test: text_input_overflow.rml
+	parent->SetClipArea(BoxArea::Content);
+}
 
 void WidgetTextInputSingleLine::SanitizeValue(String& value)
 {

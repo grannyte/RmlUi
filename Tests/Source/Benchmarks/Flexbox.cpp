@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
+#include <RmlUi/Core/Profiling.h>
 #include <RmlUi/Core/Types.h>
 #include <doctest.h>
 #include <nanobench.h>
@@ -490,4 +491,180 @@ TEST_CASE("flexbox")
 
 		document->Close();
 	}
+}
+
+static const String rml_flexbox_chatbox = R"(
+<rml>
+<head>
+	<title>Chat</title>
+    <link type="text/rcss" href="/../Tests/Data/style.rcss"/>
+	<style>
+		body {
+			font-size: 16px;
+			overflow: auto;
+			height: 300px;
+			width: 300px;
+		}
+		#chat {
+			display: flex;
+			flex-direction: column;
+			border: 2px #caa;
+		}
+		#chat > div {
+			word-break: break-word;
+			border: 2px #aac;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="chat"/>
+</body>
+</rml>
+)";
+
+TEST_CASE("flexbox.chat")
+{
+	Context* context = TestsShell::GetContext();
+	REQUIRE(context);
+
+	nanobench::Bench bench;
+	bench.title("Flexbox chat");
+	bench.relative(true);
+	// bench.epochs(100);
+
+	auto MakeFlexItemsRml = [](int number_items, const String& item_text) {
+		String rml;
+		for (int i = 0; i < number_items; i++)
+			rml += "<div>" + item_text + "</div>";
+		return rml;
+	};
+
+	const String short_words =
+		MakeFlexItemsRml(10, "aaaaaaaaaaaaaaa aaaaaaaaaaaaaa aaaaaaaaa aaaaaaaaaaaa aaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaa");
+	const String long_words =
+		MakeFlexItemsRml(10, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+	// The flex items will essentially be formatted four times each:
+	//   - Two times during flex formatting, first to get their height, then to do their actual formatting.
+	//   - Then flex formatting is itself done twice, since the body adds a scrollbar, thereby modifying the available width.
+	// The long words take longer to format, since we do a naive approach to breaking up words in ElementText::GenerateLine, making us calculate
+	// string widths repeatedly. Removing the 'word-break' property should make the long word-case much faster.
+	ElementDocument* document = context->LoadDocumentFromMemory(rml_flexbox_chatbox);
+	Element* chat = document->GetElementById("chat");
+	chat->SetInnerRML(short_words + long_words);
+	document->Show();
+	TestsShell::RenderLoop();
+
+	bench.run("Short words", [&] {
+		chat->SetInnerRML(short_words);
+		context->Update();
+		context->Render();
+		RMLUI_FrameMark;
+	});
+	bench.run("Long words", [&] {
+		chat->SetInnerRML(long_words);
+		context->Update();
+		context->Render();
+		RMLUI_FrameMark;
+	});
+
+	document->Close();
+}
+
+static const String rml_flexbox_shrink_to_fit = R"(
+<rml>
+<head>
+    <title>Flex - Shrink-to-fit 01</title>
+    <link type="text/rcss" href="/../Tests/Data/style.rcss"/>
+	<style>
+		body { width: 1000px; }
+		.shrink-to-fit {
+			float: left;
+			clear: both;
+			margin: 10px 0;
+			border: 2px #e8e8e8;
+		}
+		.outer {
+			border: 1px red;
+			padding: 30px;
+		}
+		#basic .outer {
+			display: flex;
+		}
+		#nested .outer {
+			display: inline-flex;
+		}
+		.inner {
+			border: 1px blue;
+			padding: 30px;
+		}
+	</style>
+</head>
+<body>
+<div id="basic" class="shrink-to-fit">
+	Before
+	<div class="outer">
+		<div class="inner">Flex</div>
+	</div>
+	After
+</div>
+<div id="nested" class="shrink-to-fit">
+	Before
+	<div class="outer">
+		<div class="inner">
+			<div class="outer">
+				<div class="inner">
+					<div class="outer">
+						<div class="inner">Flex</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	After
+</div>
+</body>
+</rml>
+)";
+
+TEST_CASE("flexbox.shrink-to-fit")
+{
+	Context* context = TestsShell::GetContext();
+	REQUIRE(context);
+
+	nanobench::Bench bench;
+	bench.title("Flexbox shrink-to-fit");
+	bench.relative(true);
+
+	ElementDocument* document = context->LoadDocumentFromMemory(rml_flexbox_shrink_to_fit);
+	Element* basic = document->GetElementById("basic");
+	Element* nested = document->GetElementById("nested");
+
+	document->Show();
+	TestsShell::RenderLoop();
+
+	basic->SetProperty(PropertyId::Display, Style::Display::None);
+	nested->SetProperty(PropertyId::Display, Style::Display::None);
+
+	bench.run("Reference", [&] {
+		document->SetProperty(PropertyId::Display, Style::Display::None);
+		document->RemoveProperty(PropertyId::Display);
+		context->Update();
+		context->Render();
+	});
+	bench.run("Basic shrink-to-fit", [&] {
+		basic->RemoveProperty(PropertyId::Display);
+		nested->SetProperty(PropertyId::Display, Style::Display::None);
+		context->Update();
+		context->Render();
+	});
+	bench.run("Nested shrink-to-fit", [&] {
+		basic->SetProperty(PropertyId::Display, Style::Display::None);
+		nested->RemoveProperty(PropertyId::Display);
+		context->Update();
+		context->Render();
+	});
+
+	document->Close();
 }

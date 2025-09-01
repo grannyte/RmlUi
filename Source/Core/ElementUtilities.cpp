@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,53 +27,27 @@
  */
 
 #include "../../Include/RmlUi/Core/ElementUtilities.h"
+#include "../../Include/RmlUi/Core/ComputedValues.h"
 #include "../../Include/RmlUi/Core/Context.h"
 #include "../../Include/RmlUi/Core/Core.h"
+#include "../../Include/RmlUi/Core/DecorationTypes.h"
 #include "../../Include/RmlUi/Core/Element.h"
 #include "../../Include/RmlUi/Core/ElementScroll.h"
 #include "../../Include/RmlUi/Core/Factory.h"
 #include "../../Include/RmlUi/Core/FontEngineInterface.h"
-#include "../../Include/RmlUi/Core/RenderInterface.h"
+#include "../../Include/RmlUi/Core/Math.h"
+#include "../../Include/RmlUi/Core/RenderManager.h"
+#include "../../Include/RmlUi/Core/TextShapingContext.h"
 #include "DataController.h"
 #include "DataModel.h"
 #include "DataView.h"
-#include "ElementStyle.h"
-#include "LayoutDetails.h"
-#include "LayoutEngine.h"
+#include "ElementBackgroundBorder.h"
+#include "Layout/LayoutDetails.h"
+#include "Layout/LayoutEngine.h"
 #include "TransformState.h"
 #include <limits>
 
 namespace Rml {
-
-// Builds and sets the box for an element.
-static void SetBox(Element* element)
-{
-	Element* parent = element->GetParentNode();
-	RMLUI_ASSERT(parent != nullptr);
-
-	Vector2f containing_block = parent->GetBox().GetSize();
-	containing_block.x -= parent->GetElementScroll()->GetScrollbarSize(ElementScroll::VERTICAL);
-	containing_block.y -= parent->GetElementScroll()->GetScrollbarSize(ElementScroll::HORIZONTAL);
-
-	Box box;
-	LayoutDetails::BuildBox(box, containing_block, element);
-
-	if (element->GetComputedValues().height().type != Style::Height::Auto)
-		box.SetContent(Vector2f(box.GetSize().x, containing_block.y));
-
-	element->SetBox(box);
-}
-
-// Positions an element relative to an offset parent.
-static void SetElementOffset(Element* element, Vector2f offset)
-{
-	Vector2f relative_offset = element->GetParentNode()->GetBox().GetPosition(Box::CONTENT);
-	relative_offset += offset;
-	relative_offset.x += element->GetBox().GetEdge(Box::MARGIN, Box::LEFT);
-	relative_offset.y += element->GetBox().GetEdge(Box::MARGIN, Box::TOP);
-
-	element->SetOffset(relative_offset, element->GetParentNode());
-}
 
 Element* ElementUtilities::GetElementById(Element* root_element, const String& id)
 {
@@ -86,12 +60,12 @@ Element* ElementUtilities::GetElementById(Element* root_element, const String& i
 	{
 		Element* element = search_queue.front();
 		search_queue.pop();
-		
+
 		if (element->GetId() == id)
 		{
 			return element;
 		}
-		
+
 		// Add all children to search
 		for (int i = 0; i < element->GetNumChildren(); i++)
 			search_queue.push(element->GetChild(i));
@@ -103,7 +77,7 @@ Element* ElementUtilities::GetElementById(Element* root_element, const String& i
 void ElementUtilities::GetElementsByTagName(ElementList& elements, Element* root_element, const String& tag)
 {
 	// Breadth first search on elements for the corresponding id
-	typedef Queue< Element* > SearchQueue;
+	typedef Queue<Element*> SearchQueue;
 	SearchQueue search_queue;
 	for (int i = 0; i < root_element->GetNumChildren(); ++i)
 		search_queue.push(root_element->GetChild(i));
@@ -125,7 +99,7 @@ void ElementUtilities::GetElementsByTagName(ElementList& elements, Element* root
 void ElementUtilities::GetElementsByClassName(ElementList& elements, Element* root_element, const String& class_name)
 {
 	// Breadth first search on elements for the corresponding id
-	typedef Queue< Element* > SearchQueue;
+	typedef Queue<Element*> SearchQueue;
 	SearchQueue search_queue;
 	for (int i = 0; i < root_element->GetNumChildren(); ++i)
 		search_queue.push(root_element->GetChild(i));
@@ -144,7 +118,7 @@ void ElementUtilities::GetElementsByClassName(ElementList& elements, Element* ro
 	}
 }
 
-float ElementUtilities::GetDensityIndependentPixelRatio(Element * element)
+float ElementUtilities::GetDensityIndependentPixelRatio(Element* element)
 {
 	Context* context = element->GetContext();
 	if (context == nullptr)
@@ -153,25 +127,24 @@ float ElementUtilities::GetDensityIndependentPixelRatio(Element * element)
 	return context->GetDensityIndependentPixelRatio();
 }
 
-// Returns the width of a string rendered within the context of the given element.
-int ElementUtilities::GetStringWidth(Element* element, const String& string, Character prior_character)
+int ElementUtilities::GetStringWidth(Element* element, StringView string, Character prior_character)
 {
+	const auto& computed = element->GetComputedValues();
+	const TextShapingContext text_shaping_context{computed.language(), computed.direction(), computed.letter_spacing()};
+
 	FontFaceHandle font_face_handle = element->GetFontFaceHandle();
 	if (font_face_handle == 0)
 		return 0;
 
-	return GetFontEngineInterface()->GetStringWidth(font_face_handle, string, prior_character);
+	return GetFontEngineInterface()->GetStringWidth(font_face_handle, string, text_shaping_context, prior_character);
 }
 
-// Generates the clipping region for an element.
-bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_dimensions, Element* element)
+bool ElementUtilities::GetClippingRegion(Element* element, Rectanglei& out_clip_region, ClipMaskGeometryList* out_clip_mask_list,
+	bool force_clip_self)
 {
 	using Style::Clip;
-	clip_origin = Vector2i(-1, -1);
-	clip_dimensions = Vector2i(-1, -1);
-
 	Clip target_element_clip = element->GetComputedValues().clip();
-	if (target_element_clip == Clip::Type::None)
+	if (target_element_clip == Clip::Type::None && !force_clip_self)
 		return false;
 
 	int num_ignored_clips = target_element_clip.GetNumber();
@@ -179,55 +152,67 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 	// Search through the element's ancestors, finding all elements that clip their overflow and have overflow to clip.
 	// For each that we find, we combine their clipping region with the existing clipping region, and so build up a
 	// complete clipping region for the element.
-	Element* clipping_element = element->GetParentNode();
+	Element* clipping_element = (force_clip_self ? element : element->GetOffsetParent());
 
-	while (clipping_element != nullptr)
+	Rectanglef clip_region = Rectanglef::MakeInvalid();
+
+	while (clipping_element)
 	{
+		const bool force_clip_current_element = (force_clip_self && clipping_element == element);
 		const ComputedValues& clip_computed = clipping_element->GetComputedValues();
 		const bool clip_enabled = (clip_computed.overflow_x() != Style::Overflow::Visible || clip_computed.overflow_y() != Style::Overflow::Visible);
 		const bool clip_always = (clip_computed.clip() == Clip::Type::Always);
 		const bool clip_none = (clip_computed.clip() == Clip::Type::None);
 		const int clip_number = clip_computed.clip().GetNumber();
 
-		// Merge the existing clip region with the current clip region if we aren't ignoring clip regions.
-		if ((clip_always || clip_enabled) && num_ignored_clips == 0)
+		// Merge the existing clip region with the current clip region, unless we are ignoring clip regions.
+		if (((clip_always || clip_enabled) && num_ignored_clips == 0) || force_clip_current_element)
 		{
-			// Ignore nodes that don't clip.
-			if (clip_always || clipping_element->GetClientWidth() < clipping_element->GetScrollWidth() - 0.5f ||
-				clipping_element->GetClientHeight() < clipping_element->GetScrollHeight() - 0.5f)
-			{
-				const Box::Area client_area = clipping_element->GetClientArea();
-				Vector2f element_origin_f = clipping_element->GetAbsoluteOffset(client_area);
-				Vector2f element_dimensions_f = clipping_element->GetBox().GetSize(client_area);
-				Math::SnapToPixelGrid(element_origin_f, element_dimensions_f);
+			const BoxArea clip_area = (force_clip_current_element ? BoxArea::Border : clipping_element->GetClipArea());
+			const bool has_clipping_content =
+				(clip_always || force_clip_current_element || clipping_element->GetClientWidth() < clipping_element->GetScrollWidth() - 0.5f ||
+					clipping_element->GetClientHeight() < clipping_element->GetScrollHeight() - 0.5f);
+			bool disable_scissor_clipping = false;
 
-				const Vector2i element_origin(element_origin_f);
-				const Vector2i element_dimensions(element_dimensions_f);
-				
-				if (clip_origin == Vector2i(-1, -1) && clip_dimensions == Vector2i(-1, -1))
+			if (out_clip_mask_list)
+			{
+				const TransformState* transform_state = clipping_element->GetTransformState();
+				const Matrix4f* transform = (transform_state ? transform_state->GetTransform() : nullptr);
+				const bool has_border_radius = (clip_computed.border_top_left_radius() > 0.f || clip_computed.border_top_right_radius() > 0.f ||
+					clip_computed.border_bottom_right_radius() > 0.f || clip_computed.border_bottom_left_radius() > 0.f);
+
+				// If the element has border-radius we always use a clip mask, since we can't easily predict if content is located on the curved
+				// region to be clipped. If the element has a transform we only use a clip mask when the content clips.
+				if (has_border_radius || (transform && has_clipping_content))
 				{
-					clip_origin = element_origin;
-					clip_dimensions = element_dimensions;
+					Geometry* clip_geometry = clipping_element->GetElementBackgroundBorder()->GetClipGeometry(clipping_element, clip_area);
+					const ClipMaskOperation clip_operation = (out_clip_mask_list->empty() ? ClipMaskOperation::Set : ClipMaskOperation::Intersect);
+					const Vector2f absolute_offset = clipping_element->GetAbsoluteOffset(BoxArea::Border).Round();
+					out_clip_mask_list->push_back(ClipMaskGeometry{clip_operation, clip_geometry, absolute_offset, transform});
 				}
-				else
-				{
-					const Vector2i top_left(Math::Max(clip_origin.x, element_origin.x),
-					                        Math::Max(clip_origin.y, element_origin.y));
-					
-					const Vector2i bottom_right(Math::Min(clip_origin.x + clip_dimensions.x, element_origin.x + element_dimensions.x),
-					                            Math::Min(clip_origin.y + clip_dimensions.y, element_origin.y + element_dimensions.y));
-					
-					clip_origin = top_left;
-					clip_dimensions.x = Math::Max(0, bottom_right.x - top_left.x);
-					clip_dimensions.y = Math::Max(0, bottom_right.y - top_left.y);
-				}
+
+				// If we only have border-radius then we add this element to the scissor region as well as the clip mask. This may help with e.g.
+				// culling text render calls. However, when we have a transform, the element cannot be added to the scissor region since its geometry
+				// may be projected entirely elsewhere.
+				if (transform)
+					disable_scissor_clipping = true;
+			}
+
+			if (has_clipping_content && !disable_scissor_clipping)
+			{
+				// Shrink the scissor region to the element's client area.
+				Vector2f element_offset = clipping_element->GetAbsoluteOffset(clip_area).Round();
+				Vector2f element_size = clipping_element->GetRenderBox(clip_area).GetFillSize();
+				Rectanglef element_region = Rectanglef::FromPositionSize(element_offset, element_size);
+
+				clip_region = element_region.IntersectIfValid(clip_region);
 			}
 		}
 
 		// If this region is meant to clip and we're skipping regions, update the counter.
 		if (num_ignored_clips > 0 && clip_enabled)
 			num_ignored_clips--;
-		
+
 		// Inherit how many clip regions this ancestor ignores.
 		num_ignored_clips = Math::Max(num_ignored_clips, clip_number);
 
@@ -236,145 +221,188 @@ bool ElementUtilities::GetClippingRegion(Vector2i& clip_origin, Vector2i& clip_d
 			break;
 
 		// Climb the tree to this region's parent.
-		clipping_element = clipping_element->GetParentNode();
+		clipping_element = clipping_element->GetOffsetParent();
 	}
-	
-	return clip_dimensions.x >= 0 && clip_dimensions.y >= 0;
+
+	if (clip_region.Valid())
+	{
+		Math::SnapToPixelGrid(clip_region);
+		out_clip_region = Rectanglei(clip_region);
+	}
+
+	return clip_region.Valid();
 }
 
-// Sets the clipping region from an element and its ancestors.
-bool ElementUtilities::SetClippingRegion(Element* element, Context* context)
-{	
-	RenderInterface* render_interface = nullptr;
-	if (element)
-	{
-		render_interface = element->GetRenderInterface();
-		if (!context)
-			context = element->GetContext();
-	}
-	else if (context)
-	{
-		render_interface = context->GetRenderInterface();
-		if (!render_interface)
-			render_interface = GetRenderInterface();
-	}
-
-	if (!render_interface || !context)
+bool ElementUtilities::SetClippingRegion(Element* element, bool force_clip_self)
+{
+	Context* context = element->GetContext();
+	if (!context)
 		return false;
-	
-	Vector2i clip_origin = { -1, -1 };
-	Vector2i clip_dimensions = { -1, -1 };
-	bool clip = element && GetClippingRegion(clip_origin, clip_dimensions, element);
-	
-	Vector2i current_origin = { -1, -1 };
-	Vector2i current_dimensions = { -1, -1 };
-	bool current_clip = context->GetActiveClipRegion(current_origin, current_dimensions);
-	if (current_clip != clip || (clip && (clip_origin != current_origin || clip_dimensions != current_dimensions)))
-	{
-		context->SetActiveClipRegion(clip_origin, clip_dimensions);
-		ApplyActiveClipRegion(context, render_interface);
-	}
+
+	RenderManager& render_manager = context->GetRenderManager();
+
+	Rectanglei clip_region;
+	ClipMaskGeometryList clip_mask_list;
+
+	const bool scissoring_enabled = GetClippingRegion(element, clip_region, &clip_mask_list, force_clip_self);
+	if (scissoring_enabled)
+		render_manager.SetScissorRegion(clip_region);
+	else
+		render_manager.DisableScissorRegion();
+
+	render_manager.SetClipMask(std::move(clip_mask_list));
 
 	return true;
 }
 
-void ElementUtilities::ApplyActiveClipRegion(Context* context, RenderInterface* render_interface)
+bool ElementUtilities::GetBoundingBox(Rectanglef& out_rectangle, Element* element, BoxArea box_area)
 {
-	if (render_interface == nullptr)
-		return;
-	
-	Vector2i origin;
-	Vector2i dimensions;
-	bool clip_enabled = context->GetActiveClipRegion(origin, dimensions);
+	RMLUI_ASSERT(element);
 
-	render_interface->EnableScissorRegion(clip_enabled);
-	if (clip_enabled)
+	Vector2f shadow_extent_top_left, shadow_extent_bottom_right;
+	if (box_area == BoxArea::Auto)
 	{
-		render_interface->SetScissorRegion(origin.x, origin.y, dimensions.x, dimensions.y);
+		// 'Auto' acts like border box extended to encompass any ink overflow, including the element's box-shadow.
+		// Note: Does not currently include ink overflow due to filters, as that is handled manually in ElementEffects.
+		box_area = BoxArea::Border;
+
+		if (const Property* p_box_shadow = element->GetLocalProperty(PropertyId::BoxShadow))
+		{
+			RMLUI_ASSERT(p_box_shadow->value.GetType() == Variant::BOXSHADOWLIST);
+			const BoxShadowList& shadow_list = p_box_shadow->value.GetReference<BoxShadowList>();
+
+			for (const BoxShadow& shadow : shadow_list)
+			{
+				if (!shadow.inset)
+				{
+					const float extent = 1.5f * element->ResolveLength(shadow.blur_radius) + element->ResolveLength(shadow.spread_distance);
+					const Vector2f offset = {element->ResolveLength(shadow.offset_x), element->ResolveLength(shadow.offset_y)};
+
+					shadow_extent_top_left = Math::Max(shadow_extent_top_left, -offset + Vector2f(extent));
+					shadow_extent_bottom_right = Math::Max(shadow_extent_bottom_right, offset + Vector2f(extent));
+				}
+			}
+		}
 	}
+
+	// Element bounds in non-transformed space.
+	Rectanglef bounds = Rectanglef::FromPositionSize(element->GetAbsoluteOffset(box_area), element->GetBox().GetSize(box_area));
+	bounds = bounds.Extend(shadow_extent_top_left, shadow_extent_bottom_right);
+
+	const TransformState* transform_state = element->GetTransformState();
+	const Matrix4f* transform = (transform_state ? transform_state->GetTransform() : nullptr);
+
+	// Early exit in the common case of no transform.
+	if (!transform)
+	{
+		out_rectangle = bounds;
+		return true;
+	}
+
+	Context* context = element->GetContext();
+	if (!context)
+		return false;
+
+	constexpr int num_corners = 4;
+	Vector2f corners[num_corners] = {
+		bounds.TopLeft(),
+		bounds.TopRight(),
+		bounds.BottomRight(),
+		bounds.BottomLeft(),
+	};
+
+	// Transform and project corners to window coordinates.
+	constexpr float z_clip = 10'000.f;
+	const Vector2f window_size = Vector2f(context->GetDimensions());
+	const Matrix4f project = Matrix4f::ProjectOrtho(0.f, window_size.x, 0.f, window_size.y, -z_clip, z_clip);
+	const Matrix4f project_transform = project * (*transform);
+	bool any_vertex_depth_clipped = false;
+
+	for (int i = 0; i < num_corners; i++)
+	{
+		const Vector4f pos_clip_space = project_transform * Vector4f(corners[i].x, corners[i].y, 0, 1);
+		const Vector2f pos_ndc = Vector2f(pos_clip_space.x, pos_clip_space.y) / pos_clip_space.w;
+		const Vector2f pos_viewport = 0.5f * window_size * (pos_ndc + Vector2f(1));
+		corners[i] = pos_viewport;
+		any_vertex_depth_clipped |= !(-pos_clip_space.w <= pos_clip_space.z && pos_clip_space.z <= pos_clip_space.w);
+	}
+
+	// If any part of the box area is outside the depth clip planes we give up finding the bounding box. In this situation a renderer would normally
+	// clip the underlying triangles against the clip planes. We could in principle do the same, but the added complexity does not seem worthwhile for
+	// our use cases.
+	if (any_vertex_depth_clipped)
+		return false;
+
+	// Find the rectangle covering the projected corners.
+	out_rectangle = Rectanglef::FromPosition(corners[0]);
+	for (int i = 1; i < num_corners; i++)
+		out_rectangle = out_rectangle.Join(corners[i]);
+
+	return true;
 }
 
-// Formats the contents of an element.
 void ElementUtilities::FormatElement(Element* element, Vector2f containing_block)
 {
 	LayoutEngine::FormatElement(element, containing_block);
 }
 
-// Generates the box for an element.
 void ElementUtilities::BuildBox(Box& box, Vector2f containing_block, Element* element, bool inline_element)
 {
-	LayoutDetails::BuildBox(box, containing_block, element, inline_element ? BoxContext::Inline : BoxContext::Block);
+	LayoutDetails::BuildBox(box, containing_block, element, inline_element ? BuildBoxMode::Inline : BuildBoxMode::Block);
 }
 
-// Sizes an element, and positions it within its parent offset from the borders of its content area.
 bool ElementUtilities::PositionElement(Element* element, Vector2f offset, PositionAnchor anchor)
 {
 	Element* parent = element->GetParentNode();
-	if (parent == nullptr)
+	if (!parent)
 		return false;
 
-	SetBox(element);
+	const Box& parent_box = parent->GetBox();
+	Vector2f containing_block = parent_box.GetSize();
+	containing_block.x -= parent->GetElementScroll()->GetScrollbarSize(ElementScroll::VERTICAL);
+	containing_block.y -= parent->GetElementScroll()->GetScrollbarSize(ElementScroll::HORIZONTAL);
 
-	Vector2f containing_block = element->GetParentNode()->GetBox().GetSize(Box::CONTENT);
-	Vector2f element_block = element->GetBox().GetSize(Box::MARGIN);
+	Box box;
+	LayoutDetails::BuildBox(box, containing_block, element);
+	if (box.GetSize().y < 0.f)
+		box.SetContent(Vector2f(box.GetSize().x, containing_block.y));
+	element->SetBox(box);
 
+	Vector2f element_block = box.GetSize(BoxArea::Margin);
 	Vector2f resolved_offset = offset;
 
 	if (anchor & RIGHT)
 		resolved_offset.x = containing_block.x - (element_block.x + offset.x);
-
 	if (anchor & BOTTOM)
 		resolved_offset.y = containing_block.y - (element_block.y + offset.y);
 
-	SetElementOffset(element, resolved_offset);
+	// Position element relative to its parent.
+	Vector2f relative_offset = parent_box.GetPosition(BoxArea::Content);
+	relative_offset += resolved_offset;
+	relative_offset.x += box.GetEdge(BoxArea::Margin, BoxEdge::Left);
+	relative_offset.y += box.GetEdge(BoxArea::Margin, BoxEdge::Top);
+
+	element->SetOffset(relative_offset, parent);
 
 	return true;
 }
 
-bool ElementUtilities::ApplyTransform(Element &element)
+bool ElementUtilities::ApplyTransform(Element& element)
 {
-	RenderInterface *render_interface = element.GetRenderInterface();
-	if (!render_interface)
+	Context* context = element.GetContext();
+	if (!context)
 		return false;
 
-	struct PreviousMatrix {
-		const Matrix4f* pointer; // This may be expired, dereferencing not allowed!
-		Matrix4f value;
-	};
-	static SmallUnorderedMap<RenderInterface*, PreviousMatrix> previous_matrix;
+	RenderManager& render_manager = context->GetRenderManager();
 
-	auto it = previous_matrix.find(render_interface);
-	if (it == previous_matrix.end())
-		it = previous_matrix.emplace(render_interface, PreviousMatrix{ nullptr, Matrix4f::Identity() }).first;
-
-	RMLUI_ASSERT(it != previous_matrix.end());
-
-	const Matrix4f*& old_transform = it->second.pointer;
 	const Matrix4f* new_transform = nullptr;
-
 	if (const TransformState* state = element.GetTransformState())
 		new_transform = state->GetTransform();
 
-	// Only changed transforms are submitted.
-	if (old_transform != new_transform)
-	{
-		Matrix4f& old_transform_value = it->second.value;
-
-		// Do a deep comparison as well to avoid submitting a new transform which is equal.
-		if(!old_transform || !new_transform || (old_transform_value != *new_transform))
-		{
-			render_interface->SetTransform(new_transform);
-
-			if(new_transform)
-				old_transform_value = *new_transform;
-		}
-
-		old_transform = new_transform;
-	}
+	render_manager.SetTransform(new_transform);
 
 	return true;
 }
-
 
 static bool ApplyDataViewsControllersInternal(Element* element, const bool construct_structural_view, const String& structural_view_inner_rml)
 {
@@ -393,7 +421,7 @@ static bool ApplyDataViewsControllersInternal(Element* element, const bool const
 			explicit operator bool() const { return view || controller; }
 		};
 
-		// Since data views and controllers may modify the element's attributes during initialization, we 
+		// Since data views and controllers may modify the element's attributes during initialization, we
 		// need to iterate over all the attributes _before_ initializing any views or controllers. We store
 		// the information needed to initialize them in the following container.
 		Vector<ViewControllerInitializer> initializer_list;
@@ -469,7 +497,8 @@ static bool ApplyDataViewsControllersInternal(Element* element, const bool const
 					result = true;
 				}
 				else
-					Log::Message(Log::LT_WARNING, "Could not add data-%s view to element: %s", initializer.type.c_str(), element->GetAddress().c_str());
+					Log::Message(Log::LT_WARNING, "Could not add data-%s view to element: %s", initializer.type.c_str(),
+						element->GetAddress().c_str());
 			}
 
 			if (controller)
@@ -480,14 +509,14 @@ static bool ApplyDataViewsControllersInternal(Element* element, const bool const
 					result = true;
 				}
 				else
-					Log::Message(Log::LT_WARNING, "Could not add data-%s controller to element: %s", initializer.type.c_str(), element->GetAddress().c_str());
+					Log::Message(Log::LT_WARNING, "Could not add data-%s controller to element: %s", initializer.type.c_str(),
+						element->GetAddress().c_str());
 			}
 		}
 	}
 
 	return result;
 }
-
 
 bool ElementUtilities::ApplyDataViewsControllers(Element* element)
 {

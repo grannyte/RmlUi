@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,8 +35,20 @@ WidgetTextInputSingleLinePassword::WidgetTextInputSingleLinePassword(ElementForm
 
 void WidgetTextInputSingleLinePassword::TransformValue(String& value)
 {
-	for (auto& c : value)
-		c = '*';
+	const size_t character_length = StringUtilities::LengthUTF8(value);
+	value.replace(0, value.length(), character_length, '*');
+}
+
+int WidgetTextInputSingleLinePassword::DisplayIndexToAttributeIndex(int display_index, const String& attribute_value)
+{
+	// Transforming from the attribute value to the display value (above) essentially strips away all continuation
+	// bytes. Thus, here we effectively count them back in up to the offset.
+	return StringUtilities::ConvertCharacterOffsetToByteOffset(attribute_value, display_index);
+}
+
+int WidgetTextInputSingleLinePassword::AttributeIndexToDisplayIndex(int attribute_index, const String& attribute_value)
+{
+	return (int)StringUtilities::LengthUTF8(StringView(attribute_value, 0, (size_t)attribute_index));
 }
 
 } // namespace Rml

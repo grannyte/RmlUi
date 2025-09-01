@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -68,7 +68,7 @@ TEST_CASE("font_effect")
 	{
 		constexpr int effect_size = 8;
 
-		const String rml_document = CreateString(rml_font_effect_document.size() + 100, rml_font_effect_document.c_str(), effect_name, effect_size);
+		const String rml_document = CreateString(rml_font_effect_document.c_str(), effect_name, effect_size);
 
 		ElementDocument* document = context->LoadDocumentFromMemory(rml_document);
 		document->Show();

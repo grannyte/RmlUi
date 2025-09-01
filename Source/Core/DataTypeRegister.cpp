@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -83,7 +83,7 @@ DataTypeRegister::DataTypeRegister()
 
 		String format_specifier = String(remove_trailing_zeros ? "%#." : "%.") + ToString(precision) + 'f';
 		String result;
-		if (FormatString(result, 64, format_specifier.c_str(), value) == 0)
+		if (FormatString(result, format_specifier.c_str(), value) == 0)
 			return {};
 
 		if (remove_trailing_zeros)
@@ -98,7 +98,7 @@ DataTypeRegister::DataTypeRegister()
 		double value;
 		if (!arguments[0].GetInto(value))
 			return {};
-		return Variant(Math::RoundFloat(value));
+		return Variant(Math::Round(value));
 	});
 }
 

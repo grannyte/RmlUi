@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,11 @@
 #include "RmlUi_Include_Windows.h"
 #include "RmlUi_Platform_Win32.h"
 #include "RmlUi_Renderer_VK.h"
+#include <RmlUi/Config/Config.h>
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/Core.h>
 #include <RmlUi/Core/Input.h>
+#include <RmlUi/Core/Log.h>
 #include <RmlUi/Core/Profiling.h>
 
 /**
@@ -91,11 +93,6 @@ static float GetDensityIndependentPixelRatio(HWND window_handle)
 	return float(GetWindowDpi(window_handle)) / float(USER_DEFAULT_SCREEN_DPI);
 }
 
-static void DisplayError(HWND window_handle, const Rml::String& msg)
-{
-	MessageBoxW(window_handle, RmlWin32::ConvertToUTF16(msg).c_str(), L"Backend Error", MB_OK);
-}
-
 // Create the window but don't show it yet. Returns the pixel size of the window, which may be different than the passed size due to DPI settings.
 static HWND InitializeWindow(HINSTANCE instance_handle, const std::wstring& name, int& inout_width, int& inout_height, bool allow_resize);
 // Create the Win32 Vulkan surface.
@@ -109,6 +106,7 @@ static bool CreateVulkanSurface(VkInstance instance, VkSurfaceKHR* out_surface);
 struct BackendData {
 	SystemInterface_Win32 system_interface;
 	RenderInterface_VK render_interface;
+	TextInputMethodEditor_Win32 text_input_method_editor;
 
 	HINSTANCE instance_handle = nullptr;
 	std::wstring instance_name;
@@ -144,9 +142,12 @@ bool Backend::Initialize(const char* window_name, int width, int height, bool al
 
 	data->window_handle = window_handle;
 
-	if (!data->render_interface.Initialize(CreateVulkanSurface))
+	Rml::Vector<const char*> extensions;
+	extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+	extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+	if (!data->render_interface.Initialize(std::move(extensions), CreateVulkanSurface))
 	{
-		DisplayError(window_handle, "Could not initialize Vulkan render interface.");
+		Rml::Log::Message(Rml::Log::LT_ERROR, "Failed to initialize Vulkan render interface");
 		::CloseWindow(window_handle);
 		data.reset();
 		return false;
@@ -160,12 +161,19 @@ bool Backend::Initialize(const char* window_name, int width, int height, bool al
 	::SetForegroundWindow(window_handle);
 	::SetFocus(window_handle);
 
+	// Provide a backend-specific text input handler to manage the IME.
+	Rml::SetTextInputHandler(&data->text_input_method_editor);
+
 	return true;
 }
 
 void Backend::Shutdown()
 {
 	RMLUI_ASSERT(data);
+
+	// As we forcefully override the global text input handler, we must reset it before the data is destroyed to avoid any potential use-after-free.
+	if (Rml::GetTextInputHandler() == &data->text_input_method_editor)
+		Rml::SetTextInputHandler(nullptr);
 
 	data->render_interface.Shutdown();
 
@@ -187,7 +195,20 @@ Rml::RenderInterface* Backend::GetRenderInterface()
 	return &data->render_interface;
 }
 
-bool Backend::ProcessEvents(Rml::Context* context, KeyDownCallback key_down_callback)
+static bool NextEvent(MSG& message, UINT timeout)
+{
+	if (timeout != 0)
+	{
+		UINT_PTR timer_id = SetTimer(NULL, 0, timeout, NULL);
+		BOOL res = GetMessage(&message, NULL, 0, 0);
+		KillTimer(NULL, timer_id);
+		if (message.message != WM_TIMER || message.hwnd != nullptr || message.wParam != timer_id)
+			return res;
+	}
+	return PeekMessage(&message, nullptr, 0, 0, PM_REMOVE);
+}
+
+bool Backend::ProcessEvents(Rml::Context* context, KeyDownCallback key_down_callback, bool power_save)
 {
 	RMLUI_ASSERT(data && context);
 
@@ -204,21 +225,24 @@ bool Backend::ProcessEvents(Rml::Context* context, KeyDownCallback key_down_call
 	data->key_down_callback = key_down_callback;
 
 	MSG message;
-
 	// Process events.
-	while (PeekMessage(&message, nullptr, 0, 0, PM_NOREMOVE) || !data->render_interface.IsSwapchainValid())
+	bool has_message = NextEvent(message, power_save ? static_cast<int>(Rml::Math::Min(context->GetNextUpdateDelay(), 10.0) * 1000.0) : 0);
+	while (has_message || !data->render_interface.IsSwapchainValid())
 	{
-		GetMessage(&message, nullptr, 0, 0);
-
-		// Dispatch the message to our local event handler below.
-		TranslateMessage(&message);
-		DispatchMessage(&message);
+		if (has_message)
+		{
+			// Dispatch the message to our local event handler below.
+			TranslateMessage(&message);
+			DispatchMessage(&message);
+		}
 
 		// In some situations the swapchain may become invalid, such as when the window is minimized. In this state the renderer cannot accept any
 		// render calls. Since we don't have full control over the main loop here we may risk calls to Context::Render if we were to return. Instead,
 		// we trap the application inside this loop until we are able to recreate the swapchain and render again.
 		if (!data->render_interface.IsSwapchainValid())
 			data->render_interface.RecreateSwapchain();
+
+		has_message = NextEvent(message, 0);
 	}
 
 	data->context = nullptr;
@@ -299,7 +323,7 @@ static LRESULT CALLBACK WindowProcedureHandler(HWND window_handle, UINT message,
 		if (key_down_callback && !key_down_callback(context, rml_key, rml_modifier, native_dp_ratio, true))
 			return 0;
 		// Otherwise, hand the event over to the context by calling the input handler as normal.
-		if (!RmlWin32::WindowProcedure(context, window_handle, message, w_param, l_param))
+		if (!RmlWin32::WindowProcedure(context, data->text_input_method_editor, window_handle, message, w_param, l_param))
 			return 0;
 		// The key was not consumed by the context either, try keyboard shortcuts of lower priority.
 		if (key_down_callback && !key_down_callback(context, rml_key, rml_modifier, native_dp_ratio, false))
@@ -310,7 +334,7 @@ static LRESULT CALLBACK WindowProcedureHandler(HWND window_handle, UINT message,
 	default:
 	{
 		// Submit it to the platform handler for default input handling.
-		if (!RmlWin32::WindowProcedure(data->context, window_handle, message, w_param, l_param))
+		if (!RmlWin32::WindowProcedure(data->context, data->text_input_method_editor, window_handle, message, w_param, l_param))
 			return 0;
 	}
 	break;
@@ -337,7 +361,7 @@ static HWND InitializeWindow(HINSTANCE instance_handle, const std::wstring& name
 
 	if (!RegisterClassW(&window_class))
 	{
-		DisplayError(NULL, "Could not register window class.");
+		Rml::Log::Message(Rml::Log::LT_ERROR, "Failed to register window class");
 		return nullptr;
 	}
 
@@ -349,7 +373,7 @@ static HWND InitializeWindow(HINSTANCE instance_handle, const std::wstring& name
 
 	if (!window_handle)
 	{
-		DisplayError(NULL, "Could not create window.");
+		Rml::Log::Message(Rml::Log::LT_ERROR, "Failed to create window");
 		return nullptr;
 	}
 
@@ -374,8 +398,12 @@ static HWND InitializeWindow(HINSTANCE instance_handle, const std::wstring& name
 	SetWindowLong(window_handle, GWL_EXSTYLE, extended_style);
 	SetWindowLong(window_handle, GWL_STYLE, style);
 
-	// Resize the window.
-	SetWindowPos(window_handle, HWND_TOP, 0, 0, window_rect.right - window_rect.left, window_rect.bottom - window_rect.top, SWP_NOACTIVATE);
+	// Resize the window and center it on the screen.
+	Rml::Vector2i screen_size = {GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)};
+	Rml::Vector2i window_size = {int(window_rect.right - window_rect.left), int(window_rect.bottom - window_rect.top)};
+	Rml::Vector2i window_pos = Rml::Math::Max((screen_size - window_size) / 2, Rml::Vector2i(0));
+
+	SetWindowPos(window_handle, HWND_TOP, window_pos.x, window_pos.y, window_size.x, window_size.y, SWP_NOACTIVATE);
 
 	return window_handle;
 }

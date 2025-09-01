@@ -262,7 +262,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level1</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug";RmlDebugger_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug";RMLUI_DEBUGGER_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;;RMLUI_SVG_PLUGIN</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -408,7 +408,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release";RmlDebugger_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release";RMLUI_DEBUGGER_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;;RMLUI_SVG_PLUGIN</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
@@ -558,7 +558,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="MinSizeRel";RmlDebugger_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="MinSizeRel";RMLUI_DEBUGGER_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;;RMLUI_SVG_PLUGIN</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
@@ -694,7 +694,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo";RmlDebugger_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo";RMLUI_DEBUGGER_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;;RMLUI_SVG_PLUGIN</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -830,6 +830,7 @@
     <ClInclude Include="..\Source\Debugger\DebuggerPlugin.h" />
     <ClInclude Include="..\Source\Debugger\DebuggerSystemInterface.h" />
     <ClInclude Include="..\Source\Debugger\ElementContextHook.h" />
+    <ClInclude Include="..\Source\Debugger\ElementDebugDocument.h" />
     <ClInclude Include="..\Source\Debugger\ElementInfo.h" />
     <ClInclude Include="..\Source\Debugger\ElementLog.h" />
     <ClInclude Include="..\Source\Debugger\FontSource.h" />
@@ -844,6 +845,7 @@
     <ClCompile Include="..\Source\Debugger\DebuggerPlugin.cpp" />
     <ClCompile Include="..\Source\Debugger\DebuggerSystemInterface.cpp" />
     <ClCompile Include="..\Source\Debugger\ElementContextHook.cpp" />
+    <ClCompile Include="..\Source\Debugger\ElementDebugDocument.cpp" />
     <ClCompile Include="..\Source\Debugger\ElementInfo.cpp" />
     <ClCompile Include="..\Source\Debugger\ElementLog.cpp" />
     <ClCompile Include="..\Source\Debugger\Geometry.cpp" />

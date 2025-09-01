@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/Types.h>
-
 #include <doctest.h>
 #include <nanobench.h>
 
@@ -78,7 +77,6 @@ static String document_rml = R"(
 </rml>
 )";
 
-
 TEST_CASE("backgrounds_and_borders")
 {
 	Context* context = TestsShell::GetContext();
@@ -112,7 +110,7 @@ TEST_CASE("backgrounds_and_borders")
 		bench.run("Background all", [&] {
 			// Force regeneration of backgrounds without changing layout
 			for (auto& element : elements)
-				element->SetProperty(Rml::PropertyId::BackgroundColor, Rml::Property(Colourb(), Property::COLOUR));
+				element->SetProperty(Rml::PropertyId::BackgroundColor, Rml::Property(Colourb(), Unit::COLOUR));
 			context->Update();
 			context->Render();
 		});
@@ -120,7 +118,7 @@ TEST_CASE("backgrounds_and_borders")
 		bench.run("Border all", [&] {
 			// Force regeneration of borders without changing layout
 			for (auto& element : elements)
-				element->SetProperty(Rml::PropertyId::BorderLeftColor, Rml::Property(Colourb(), Property::COLOUR));
+				element->SetProperty(Rml::PropertyId::BorderLeftColor, Rml::Property(Colourb(), Unit::COLOUR));
 			context->Update();
 			context->Render();
 		});
@@ -132,9 +130,9 @@ TEST_CASE("backgrounds_and_borders")
 		document->QuerySelectorAll(elements, "#" + id + " > div");
 		REQUIRE(!elements.empty());
 
-		bench.run("Border " + id, [&] {
+		bench.run(("Border " + id).c_str(), [&] {
 			for (auto& element : elements)
-				element->SetProperty(Rml::PropertyId::BorderLeftColor, Rml::Property(Colourb(), Property::COLOUR));
+				element->SetProperty(Rml::PropertyId::BorderLeftColor, Rml::Property(Colourb(), Unit::COLOUR));
 			context->Update();
 			context->Render();
 		});

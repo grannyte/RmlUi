@@ -1,7 +1,7 @@
 <rml>
 <head>
-    <title>Color interpolation</title>
-    <link type="text/rcss" href="../style.rcss"/>
+	<title>Color interpolation</title>
+	<link type="text/rcss" href="../style.rcss"/>
 	<meta name="Description" content="Color interpolation using animation, border-radius property, and gradient decorator." />
 	<meta name="Assert" content="There should be smooth transitions between the colors. The red squares can be hovered for animation transitions." />
 	<link rel="GitHub discussion #207" href="https://github.com/mikke89/RmlUi/discussions/207" />
@@ -28,12 +28,12 @@
 		}
 		.wide {
 			width: 300dp;
-		 }
+		}
 		.rectangle {
-			decorator: gradient( horizontal #f00 #0f0 );
+			decorator: horizontal-gradient( #f00 #0f0 );
 		}
 		.round {
-			decorator: gradient( horizontal #f00 #0f0 );
+			decorator: horizontal-gradient( #f00 #0f0 );
 			border-radius: 50dp;
 		}
 		.round-border {
@@ -42,10 +42,10 @@
 			border-color: #0f0 #f00 #0f0 #f00;
 		}
 		.rectangle.black {
-			decorator: gradient( horizontal #f00 #000 );
+			decorator: horizontal-gradient( #f00 #000 );
 		}
 		.round.black {
-			decorator: gradient( horizontal #f00 #000 );
+			decorator: horizontal-gradient( #f00 #000 );
 			border-radius: 50dp;
 		}
 		.round-border.black {

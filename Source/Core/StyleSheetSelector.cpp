@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -90,7 +90,7 @@ bool operator==(const CompoundSelector& a, const CompoundSelector& b)
 	return true;
 }
 
-bool IsSelectorApplicable(const Element* element, const StructuralSelector& selector)
+bool IsSelectorApplicable(const Element* element, const StructuralSelector& selector, const Element* scope)
 {
 	RMLUI_ASSERT(element);
 
@@ -367,7 +367,7 @@ bool IsSelectorApplicable(const Element* element, const StructuralSelector& sele
 
 		for (const StyleSheetNode* node : selector.selector_tree->leafs)
 		{
-			if (node->IsApplicable(element))
+			if (node->IsApplicable(element, scope))
 			{
 				inner_selector_matches = true;
 				break;
@@ -375,6 +375,11 @@ bool IsSelectorApplicable(const Element* element, const StructuralSelector& sele
 		}
 
 		return !inner_selector_matches;
+	}
+	break;
+	case StructuralSelectorType::Scope:
+	{
+		return scope && element == scope;
 	}
 	break;
 	case StructuralSelectorType::Invalid:

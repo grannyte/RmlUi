@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@
 using namespace Rml;
 
 static DataTypeRegister type_register;
-static DataModel model(type_register.GetTransformFuncRegister());
+static DataModel model(&type_register);
 static DataExpressionInterface interface(&model, nullptr);
 
 static String TestExpression(const String& expression)
@@ -93,11 +93,15 @@ TEST_CASE("Data expressions")
 	int num_trolls = 1;
 	String color_name = "color";
 	Colourb color_value = Colourb(180, 100, 255);
+	std::vector<String> num_multi = {"left", "right"};
 
-	DataModelConstructor constructor(&model, &type_register);
+	DataModelConstructor constructor(&model);
+	constructor.RegisterArray<std::vector<String>>();
+
 	constructor.Bind("radius", &radius);
 	constructor.Bind("color_name", &color_name);
 	constructor.Bind("num_trolls", &num_trolls);
+	constructor.Bind("num_multi", &num_multi);
 	constructor.BindFunc("color_value", [&](Variant& variant) { variant = ToString(color_value); });
 
 	constructor.RegisterTransformFunc("concatenate", [](const VariantList& arguments) -> Variant {
@@ -121,7 +125,7 @@ TEST_CASE("Data expressions")
 
 	CHECK(TestExpression("'a' | to_upper") == "A");
 	CHECK(TestExpression("!!10 - 1 ? 'hello' : 'world' | to_upper") == "WORLD");
-	CHECK(TestExpression("(color_name) + (': rgba(' + color_value + ')')") == "color: rgba(180, 100, 255, 255)");
+	CHECK(TestExpression("(color_name) + (': ' + color_value)") == "color: #b464ff");
 	CHECK(TestExpression("'hello world' | to_upper | concatenate(5 + 12 == 17 ? 'yes' : 'no', 9*2)") == "HELLO WORLD,yes,18");
 	CHECK(TestExpression("true == false") == "0");
 	CHECK(TestExpression("true != false") == "1");
@@ -192,4 +196,8 @@ TEST_CASE("Data expressions")
 	handle.DirtyVariable("num_trolls");
 	CHECK(TestExpression("concatenate('It takes', num_trolls*3 + ' goats', 'to outsmart', num_trolls | number_suffix('troll','trolls'))") ==
 		"It takes,9 goats,to outsmart,3 trolls");
+
+	// Test that only one side of ternary is evaluated
+	CHECK(TestExpression("true ? num_multi[0] : num_multi[999]") == "left");
+	CHECK(TestExpression("false ? num_multi[999] : num_multi[1]") == "right");
 }

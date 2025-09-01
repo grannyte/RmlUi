@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
  */
 
 #include "../Common/Mocks.h"
+#include "../Common/TestsInterface.h"
 #include "../Common/TestsShell.h"
 #include "../Common/TypesToString.h"
 #include <RmlUi/Core/Context.h>
@@ -165,7 +166,12 @@ TEST_CASE("Element")
 	context->Update();
 	context->Render();
 
-	TestsShell::RenderLoop();
+	Element* div = document->GetFirstChild();
+	Element* span = div->GetChild(1);
+	REQUIRE(div);
+	REQUIRE(div->GetTagName() == "div");
+	REQUIRE(span);
+	REQUIRE(span->GetTagName() == "span");
 
 	SUBCASE("Attribute")
 	{
@@ -179,20 +185,17 @@ TEST_CASE("Element")
 			std::vector<UniquePtr<tl::expectation>> expectations;
 
 			UniquePtr<MockEventListener> mockEventListener;
-			const auto configureMockEventListener = [&]()
-			{
+			const auto configureMockEventListener = [&]() {
 				mockEventListener.reset(new MockEventListener());
 				expectations.emplace_back(NAMED_ALLOW_CALL(*mockEventListener, OnAttach(button)));
-				expectations.emplace_back(NAMED_ALLOW_CALL(*mockEventListener, OnDetach(button))
-					.LR_SIDE_EFFECT(mockEventListener.reset()));
+				expectations.emplace_back(NAMED_ALLOW_CALL(*mockEventListener, OnDetach(button)).LR_SIDE_EFFECT(mockEventListener.reset()));
 			};
 
 			MockEventListenerInstancer mockEventListenerInstancer;
-			const auto configureMockEventListenerInstancer = [&](const auto value)
-			{
+			const auto configureMockEventListenerInstancer = [&](const auto value) {
 				expectations.emplace_back(NAMED_REQUIRE_CALL(mockEventListenerInstancer, InstanceEventListener(value, button))
-					.LR_SIDE_EFFECT(configureMockEventListener())
-					.LR_RETURN(mockEventListener.get()));
+											  .LR_SIDE_EFFECT(configureMockEventListener())
+											  .LR_RETURN(mockEventListener.get()));
 			};
 
 			Factory::RegisterEventListenerInstancer(&mockEventListenerInstancer);
@@ -260,21 +263,21 @@ TEST_CASE("Element")
 	SUBCASE("CloneManual")
 	{
 		Element* element = document->GetFirstChild();
-		REQUIRE(element->GetProperty<String>("background-color") == "255, 0, 0, 255");
-		CHECK(element->Clone()->GetProperty<String>("background-color") == "255, 0, 0, 255");
+		REQUIRE(element->GetProperty<String>("background-color") == "#ff0000");
+		CHECK(element->Clone()->GetProperty<String>("background-color") == "#ff0000");
 
 		element->SetProperty("background-color", "#0f0");
-		CHECK(element->Clone()->GetProperty<String>("background-color") == "0, 255, 0, 255");
+		CHECK(element->Clone()->GetProperty<String>("background-color") == "#00ff00");
 
 		element->RemoveProperty("background-color");
 		Element* clone = document->AppendChild(element->Clone());
 		context->Update();
-		CHECK(clone->GetProperty<String>("background-color") == "255, 255, 255, 255");
+		CHECK(clone->GetProperty<String>("background-color") == "#ffffff");
 
 		element->SetClass("blue", true);
 		clone = document->AppendChild(element->Clone());
 		context->Update();
-		CHECK(clone->GetProperty<String>("background-color") == "0, 0, 255, 255");
+		CHECK(clone->GetProperty<String>("background-color") == "#0000ff");
 	}
 
 	SUBCASE("SetInnerRML")
@@ -292,6 +295,46 @@ TEST_CASE("Element")
 		CHECK(element_ptr->GetInnerRML() == "");
 		element_ptr->SetInnerRML("text");
 		CHECK(element_ptr->GetInnerRML() == "text");
+	}
+
+	SUBCASE("GetInnerRML")
+	{
+		String inner_rml;
+
+		inner_rml = document->GetInnerRML();
+		CHECK(inner_rml == R"(<div style="background-color: #ff0000;">This is a <span>sample</span>.</div>)");
+
+		div->SetProperty("background-color", "white");
+		inner_rml = document->GetInnerRML();
+		CHECK(inner_rml == R"(<div style="background-color: #ffffff;">This is a <span>sample</span>.</div>)");
+
+		div->RemoveProperty("background-color");
+		inner_rml = document->GetInnerRML();
+		CHECK(inner_rml == R"(<div>This is a <span>sample</span>.</div>)");
+
+		div->SetProperty("cursor", "x<y");
+		inner_rml = document->GetInnerRML();
+		CHECK(inner_rml == R"(<div style="cursor: x&lt;y;">This is a <span>sample</span>.</div>)");
+
+		span->SetProperty("font-weight", "bold");
+		inner_rml = document->GetInnerRML();
+		CHECK(inner_rml == R"(<div style="cursor: x&lt;y;">This is a <span style="font-weight: bold;">sample</span>.</div>)");
+	}
+
+	SUBCASE("InsertBefore")
+	{
+		String inner_rml;
+
+		inner_rml = document->GetInnerRML();
+		CHECK(inner_rml == R"(<div style="background-color: #ff0000;">This is a <span>sample</span>.</div>)");
+
+		div->InsertBefore(document->CreateElement("img"), span);
+		inner_rml = document->GetInnerRML();
+		CHECK(inner_rml == R"(<div style="background-color: #ff0000;">This is a <img /><span>sample</span>.</div>)");
+
+		div->InsertBefore(document->CreateElement("button"), nullptr)->SetInnerRML("Click me");
+		inner_rml = document->GetInnerRML();
+		CHECK(inner_rml == R"(<div style="background-color: #ff0000;">This is a <img /><span>sample</span>.<button>Click me</button></div>)");
 	}
 
 	document->Close();
@@ -316,14 +359,14 @@ TEST_CASE("Element.ScrollIntoView")
 	{
 		for (int j = 0; j < 4; ++j)
 		{
-			cells[i][j] = document->GetElementById(CreateString(8, "cell%d%d", i, j));
+			cells[i][j] = document->GetElementById(CreateString("cell%d%d", i, j));
 			REQUIRE(cells[i][j]);
 		}
 	}
 
-	REQUIRE(cells[0][0]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(0, 0));
-	REQUIRE(cells[2][2]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(100, 100));
-	REQUIRE(cells[3][3]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(150, 150));
+	REQUIRE(cells[0][0]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(0, 0));
+	REQUIRE(cells[2][2]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(100, 100));
+	REQUIRE(cells[3][3]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(150, 150));
 	REQUIRE(scrollable->GetScrollLeft() == 0);
 	REQUIRE(scrollable->GetScrollTop() == 0);
 
@@ -333,9 +376,9 @@ TEST_CASE("Element.ScrollIntoView")
 
 		Run(context);
 
-		CHECK(cells[0][0]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(-50, -100));
-		CHECK(cells[2][2]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(50, 0));
-		CHECK(cells[3][3]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(100, 50));
+		CHECK(cells[0][0]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(-50, -100));
+		CHECK(cells[2][2]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(50, 0));
+		CHECK(cells[3][3]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(100, 50));
 		CHECK(scrollable->GetScrollLeft() == 50);
 		CHECK(scrollable->GetScrollTop() == 100);
 
@@ -343,9 +386,9 @@ TEST_CASE("Element.ScrollIntoView")
 
 		Run(context);
 
-		CHECK(cells[0][0]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(-50, -50));
-		CHECK(cells[2][2]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(50, 50));
-		CHECK(cells[3][3]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(100, 100));
+		CHECK(cells[0][0]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(-50, -50));
+		CHECK(cells[2][2]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(50, 50));
+		CHECK(cells[3][3]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(100, 100));
 		CHECK(scrollable->GetScrollLeft() == 50);
 		CHECK(scrollable->GetScrollTop() == 50);
 	}
@@ -356,9 +399,9 @@ TEST_CASE("Element.ScrollIntoView")
 
 		Run(context);
 
-		CHECK(cells[0][0]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(-75, -75));
-		CHECK(cells[2][2]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(25, 25));
-		CHECK(cells[3][3]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(75, 75));
+		CHECK(cells[0][0]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(-75, -75));
+		CHECK(cells[2][2]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(25, 25));
+		CHECK(cells[3][3]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(75, 75));
 
 		SUBCASE("NearestAlready")
 		{
@@ -366,9 +409,9 @@ TEST_CASE("Element.ScrollIntoView")
 
 			Run(context);
 
-			CHECK(cells[0][0]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(-75, -75));
-			CHECK(cells[2][2]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(25, 25));
-			CHECK(cells[3][3]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(75, 75));
+			CHECK(cells[0][0]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(-75, -75));
+			CHECK(cells[2][2]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(25, 25));
+			CHECK(cells[3][3]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(75, 75));
 		}
 
 		SUBCASE("NearestBefore")
@@ -377,9 +420,9 @@ TEST_CASE("Element.ScrollIntoView")
 
 			Run(context);
 
-			CHECK(cells[0][0]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(-50, -50));
-			CHECK(cells[1][1]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(0, 0));
-			CHECK(cells[2][2]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(50, 50));
+			CHECK(cells[0][0]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(-50, -50));
+			CHECK(cells[1][1]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(0, 0));
+			CHECK(cells[2][2]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(50, 50));
 		}
 
 		SUBCASE("NearestAfter")
@@ -388,9 +431,35 @@ TEST_CASE("Element.ScrollIntoView")
 
 			Run(context);
 
-			CHECK(cells[1][1]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(-50, -50));
-			CHECK(cells[2][2]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(0, 0));
-			CHECK(cells[3][3]->GetAbsoluteOffset(Rml::Box::Area::BORDER) == Vector2f(50, 50));
+			CHECK(cells[1][1]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(-50, -50));
+			CHECK(cells[2][2]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(0, 0));
+			CHECK(cells[3][3]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(50, 50));
+		}
+
+		SUBCASE("Smoothscroll")
+		{
+			TestsSystemInterface* system_interface = TestsShell::GetTestsSystemInterface();
+			system_interface->SetTime(0);
+			cells[3][3]->ScrollIntoView({ScrollAlignment::Nearest, ScrollAlignment::Nearest, ScrollBehavior::Smooth});
+
+			constexpr double dt = 1.0 / 15.0;
+			system_interface->SetTime(dt);
+			Run(context);
+
+			// We don't define the exact offset at this time step, but it should be somewhere between the start and end offsets.
+			Vector2f offset = cells[3][3]->GetAbsoluteOffset(Rml::BoxArea::Border);
+			CHECK(offset.x > 50.f);
+			CHECK(offset.y > 50.f);
+			CHECK(offset.x < 75.f);
+			CHECK(offset.y < 75.f);
+
+			// After one second it should be at the destination offset.
+			for (double t = 2.0 * dt; t < 1.0; t += dt)
+			{
+				system_interface->SetTime(t);
+				Run(context);
+			}
+			CHECK(cells[3][3]->GetAbsoluteOffset(Rml::BoxArea::Border) == Vector2f(50, 50));
 		}
 	}
 
