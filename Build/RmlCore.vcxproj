@@ -273,7 +273,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level1</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.1";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -330,7 +330,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.1";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
     <ResourceCompile>
@@ -416,7 +416,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.1";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
@@ -475,7 +475,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.1";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
@@ -563,7 +563,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.1";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
@@ -607,7 +607,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.1";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
@@ -696,7 +696,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.1";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -753,7 +753,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.1";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
     <ResourceCompile>
@@ -827,6 +827,7 @@
   <ItemGroup>
     <ClCompile Include="..\Source\Core\BaseXMLParser.cpp" />
     <ClCompile Include="..\Source\Core\Box.cpp" />
+    <ClCompile Include="..\Source\Core\BoxShadowCache.cpp" />
     <ClCompile Include="..\Source\Core\CallbackTexture.cpp" />
     <ClCompile Include="..\Source\Core\Clock.cpp" />
     <ClCompile Include="..\Source\Core\CompiledFilterShader.cpp" />
@@ -1014,6 +1015,8 @@
     <ClCompile Include="..\Source\Core\XMLNodeHandlerTemplate.cpp" />
     <ClCompile Include="..\Source\Core\XMLParser.cpp" />
     <ClCompile Include="..\Source\Core\XMLParseTools.cpp" />
+    <ClInclude Include="..\Source\Core\BoxShadowCache.h" />
+    <ClInclude Include="..\Source\Core\BoxShadowHash.h" />
     <ClInclude Include="..\Source\Core\ControlledLifetimeResource.h" />
     <ClInclude Include="..\Source\Core\DecoratorShader.h" />
     <ClInclude Include="..\Source\Core\DecoratorText.h" />

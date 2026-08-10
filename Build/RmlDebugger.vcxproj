@@ -828,8 +828,10 @@
     <ClInclude Include="..\Source\Debugger\BeaconSource.h" />
     <ClInclude Include="..\Source\Debugger\CommonSource.h" />
     <ClInclude Include="..\Source\Debugger\DebuggerPlugin.h" />
+    <ClInclude Include="..\Source\Debugger\DataModelsSource.h" />
     <ClInclude Include="..\Source\Debugger\DebuggerSystemInterface.h" />
     <ClInclude Include="..\Source\Debugger\ElementContextHook.h" />
+    <ClInclude Include="..\Source\Debugger\ElementDataModels.h" />
     <ClInclude Include="..\Source\Debugger\ElementDebugDocument.h" />
     <ClInclude Include="..\Source\Debugger\ElementInfo.h" />
     <ClInclude Include="..\Source\Debugger\ElementLog.h" />
@@ -845,6 +847,7 @@
     <ClCompile Include="..\Source\Debugger\DebuggerPlugin.cpp" />
     <ClCompile Include="..\Source\Debugger\DebuggerSystemInterface.cpp" />
     <ClCompile Include="..\Source\Debugger\ElementContextHook.cpp" />
+    <ClCompile Include="..\Source\Debugger\ElementDataModels.cpp" />
     <ClCompile Include="..\Source\Debugger\ElementDebugDocument.cpp" />
     <ClCompile Include="..\Source\Debugger\ElementInfo.cpp" />
     <ClCompile Include="..\Source\Debugger\ElementLog.cpp" />
