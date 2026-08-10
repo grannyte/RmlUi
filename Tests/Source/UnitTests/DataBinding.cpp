@@ -1,31 +1,3 @@
-/*
- * This source file is part of RmlUi, the HTML/CSS Interface Middleware
- *
- * For the latest information, see http://github.com/mikke89/RmlUi
- *
- * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019-2023 The RmlUi Team, and contributors
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- */
-
 #include "../Common/TestsShell.h"
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/DataModelHandle.h>
@@ -38,7 +10,7 @@ using namespace Rml;
 
 namespace {
 
-static const String document_rml = R"(
+static const String data_binding_rml = R"(
 <rml>
 <head>
 	<title>Test</title>
@@ -564,7 +536,7 @@ TEST_CASE("data_binding")
 
 	REQUIRE(InitializeDataBindings(context));
 
-	ElementDocument* document = context->LoadDocumentFromMemory(document_rml);
+	ElementDocument* document = context->LoadDocumentFromMemory(data_binding_rml);
 	REQUIRE(document);
 	document->Show();
 
@@ -706,6 +678,87 @@ TEST_CASE("data_binding.set_enum")
 
 	CHECK(globals.simple == Simple_Two);
 	CHECK(element->GetInnerRML() == "2");
+
+	document->Close();
+	TestsShell::ShutdownShell();
+}
+
+static const String data_model_on_body_rml = R"(
+<rml>
+<head>
+	<title>Test</title>
+	<link type="text/rcss" href="/assets/rml.rcss"/>
+	<link type="text/rcss" href="/assets/invader.rcss"/>
+	<link type="text/template" href="/assets/window.rml"/>
+	<style>
+		body {
+			width: 500px;
+			height: 400px;
+			background: #ccc;
+			color: #333;
+		}
+	</style>
+</head>
+<body BODY_ATTRIBUTE>
+	<div DIV_ATTRIBUTE>
+		<div id="simple">{{ simple }}</div>
+		<div id="s2_val">{{ s2.val }}</div>
+		<div id="array_size">{{ arrays.a.size }}</div>
+		<div id="array_empty" data-attr-empty="arrays.a.size == 0"></div>
+		<div data-for="value, i : arrays.a">{{ i }}: {{ value }}</div>
+	</div>
+</body>
+</rml>
+)";
+
+TEST_CASE("data_binding.data_model_on_body")
+{
+	Context* context = TestsShell::GetContext();
+	REQUIRE(context);
+
+	REQUIRE(InitializeDataBindings(context));
+
+	const String data_model_attribute = R"( data-model="basics")";
+	const String template_attribute = R"( template="window")";
+
+	String document_rml;
+	SUBCASE("data_model_on_div")
+	{
+		document_rml = StringUtilities::Replace(data_model_on_body_rml, "BODY_ATTRIBUTE", "");
+		document_rml = StringUtilities::Replace(document_rml, "DIV_ATTRIBUTE", data_model_attribute);
+	}
+	SUBCASE("data_model_on_body")
+	{
+		document_rml = StringUtilities::Replace(data_model_on_body_rml, "BODY_ATTRIBUTE", data_model_attribute);
+		document_rml = StringUtilities::Replace(document_rml, "DIV_ATTRIBUTE", "");
+	}
+	SUBCASE("data_model_on_body_with_template")
+	{
+		document_rml = StringUtilities::Replace(data_model_on_body_rml, "BODY_ATTRIBUTE", data_model_attribute + template_attribute);
+		document_rml = StringUtilities::Replace(document_rml, "DIV_ATTRIBUTE", "");
+	}
+
+	ElementDocument* document = context->LoadDocumentFromMemory(document_rml);
+	REQUIRE(document);
+	document->Show();
+
+	TestsShell::RenderLoop();
+
+	CHECK(document->GetElementById("simple")->GetInnerRML() == Rml::ToString(int(globals.simple)));
+	CHECK(document->GetElementById("s2_val")->GetInnerRML() == globals.s2.val);
+
+	const Vector<int> array = Arrays{}.a;
+	CHECK(document->GetElementById("array_size")->GetInnerRML() == Rml::ToString(array.size()));
+	CHECK(document->GetElementById("array_empty")->GetAttribute<bool>("empty", true) == array.empty());
+
+	Element* element = document->GetElementById("array_empty")->GetNextSibling();
+	size_t i = 0;
+	for (; i < array.size() && element; ++i)
+	{
+		CHECK(element->GetInnerRML() == Rml::CreateString("%zu: %d", i, array[i]));
+		element = element->GetNextSibling();
+	}
+	CHECK(i == array.size());
 
 	document->Close();
 	TestsShell::ShutdownShell();

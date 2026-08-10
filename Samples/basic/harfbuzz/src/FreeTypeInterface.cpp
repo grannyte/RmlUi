@@ -1,31 +1,3 @@
-/*
- * This source file is part of RmlUi, the HTML/CSS Interface Middleware
- *
- * For the latest information, see http://github.com/mikke89/RmlUi
- *
- * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019-2023 The RmlUi Team, and contributors
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- */
-
 #include "FreeTypeInterface.h"
 #include <ft2build.h>
 #include <limits.h>
@@ -212,28 +184,18 @@ static bool BuildGlyph(FT_Face ft_face, const FontGlyphIndex glyph_index, Charac
 
 				if (glyph.color_format == Rml::ColorFormat::RGBA8)
 				{
-					// Swizzle channels (BGRA -> RGBA) and un-premultiply alpha.
+					// Swizzle channels (BGRA -> RGBA)
 					destination_bitmap = glyph.bitmap_owned_data.get();
 
 					for (int k = 0; k < glyph.bitmap_dimensions.x * glyph.bitmap_dimensions.y * num_bytes_per_pixel; k += 4)
 					{
-						Rml::byte b = destination_bitmap[k];
-						Rml::byte g = destination_bitmap[k + 1];
-						Rml::byte r = destination_bitmap[k + 2];
+						std::swap(destination_bitmap[k], destination_bitmap[k + 2]);
+#ifdef RMLUI_DEBUG
 						const Rml::byte alpha = destination_bitmap[k + 3];
-						RMLUI_ASSERTMSG(b <= alpha && g <= alpha && r <= alpha, "Assumption of glyph data being premultiplied is broken.");
-
-						if (alpha > 0 && alpha < 255)
-						{
-							b = Rml::byte((b * 255) / alpha);
-							g = Rml::byte((g * 255) / alpha);
-							r = Rml::byte((r * 255) / alpha);
-						}
-
-						destination_bitmap[k] = r;
-						destination_bitmap[k + 1] = g;
-						destination_bitmap[k + 2] = b;
-						destination_bitmap[k + 3] = alpha;
+						for (int c = 0; c < 3; c++)
+							RMLUI_ASSERTMSG(destination_bitmap[k + c] <= alpha,
+								"Glyph data is assumed to be encoded in premultiplied alpha, but that is not the case.");
+#endif
 					}
 				}
 			}
@@ -307,6 +269,9 @@ static void GenerateMetrics(FT_Face ft_face, FontMetrics& metrics, float bitmap_
 		metrics.x_height = ft_face->glyph->metrics.height * bitmap_scaling_factor / float(1 << 6);
 	else
 		metrics.x_height = 0.5f * metrics.line_spacing;
+
+	FT_UInt ellipsis_index = FT_Get_Char_Index(ft_face, 0x2026);
+	metrics.has_ellipsis = (ellipsis_index != 0);
 }
 
 static bool SetFontSize(FT_Face ft_face, int font_size, float& out_bitmap_scaling_factor)

@@ -1,14 +1,14 @@
 <rml>
 	<head>
-		<title>Demo</title>
+		<title>SVG Element</title>
 		<link type="text/template" href="/assets/window.rml" />
 		<style>
-			body
-			{
+			body {
 				width: 300px;
 				height: 225px;
-
 				margin: auto;
+				left: -400px;
+				top: -400px;
 			}
 
 			svg {
