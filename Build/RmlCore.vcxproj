@@ -211,7 +211,7 @@
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Emscripten'">true</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)freetype\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)freetype\include;$(SolutionDir)lunasvg\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(SolutionDir)$(Platform)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -247,7 +247,7 @@
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(SolutionDir)$(Platform)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
-    <IncludePath>$(SolutionDir)freetype\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)freetype\include;$(SolutionDir)lunasvg\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(SolutionDir)$(Platform)\;$(SolutionDir)x64\release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">
@@ -274,7 +274,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level1</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;LUNASVG_BUILD_STATIC;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -303,7 +303,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freetype.lib;lunasvg.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -697,7 +697,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <UseFullPaths>false</UseFullPaths>
       <WarningLevel>Level4</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;N_RMLUI_SVG_PLUGIN;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;RMLUI_VERSION="6.2";RMLUI_CORE_EXPORTS;RMLUI_FONT_ENGINE_FREETYPE;N_RMLUI_LOTTIE_PLUGIN;RMLUI_SVG_PLUGIN;LUNASVG_BUILD_STATIC;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -727,7 +727,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freetype.lib;lunasvg.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -826,6 +826,11 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Source\SVG\DecoratorSVG.cpp" />
+    <ClCompile Include="..\Source\SVG\ElementSVG.cpp" />
+    <ClCompile Include="..\Source\SVG\SVGCache.cpp" />
+    <ClCompile Include="..\Source\SVG\SVGPlugin.cpp" />
+    <ClCompile Include="..\Source\SVG\XMLNodeHandlerSVG.cpp" />
     <ClCompile Include="..\Source\Core\BaseXMLParser.cpp" />
     <ClCompile Include="..\Source\Core\Box.cpp" />
     <ClCompile Include="..\Source\Core\BoxShadowCache.cpp" />
@@ -1079,6 +1084,11 @@
     <ClInclude Include="..\Source\Core\PropertyParserFilter.h" />
     <ClInclude Include="..\Source\Core\RenderManagerAccess.h" />
     <ClInclude Include="..\Source\Core\ScrollController.h" />
+    <ClInclude Include="..\Source\SVG\DecoratorSVG.h" />
+    <ClInclude Include="..\Source\SVG\SVGCache.h" />
+    <ClInclude Include="..\Source\SVG\SVGPlugin.h" />
+    <ClInclude Include="..\Source\SVG\XMLNodeHandlerSVG.h" />
+    <ClInclude Include="..\Include\RmlUi\SVG\ElementSVG.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Source\Core\Pool.inl" />
