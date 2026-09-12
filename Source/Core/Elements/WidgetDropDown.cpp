@@ -229,7 +229,9 @@ void WidgetDropDown::OnRender()
 
 	if (value_layout_dirty)
 	{
-		ElementUtilities::FormatElement(value_element, parent_element->GetBox().GetSize(BoxArea::Border));
+		// Must match the Content-box offset below -- passing the Border size here sized value_element
+		// past the select's own padding/border, so a wide value overflowed past the visible box.
+		ElementUtilities::FormatElement(value_element, parent_element->GetBox().GetSize(BoxArea::Content));
 		value_element->SetOffset(parent_element->GetBox().GetPosition(BoxArea::Content), parent_element);
 
 		value_layout_dirty = false;
